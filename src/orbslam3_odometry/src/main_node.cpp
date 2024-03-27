@@ -4,18 +4,33 @@
 #include<chrono>
 
 #include "rclcpp/rclcpp.hpp"
-#include "orbslam3_odometry_stereo.hpp" //  TODO forse metti in include
+#include "stereo/stereo.hpp" //  TODO forse metti in include
 
 #include "System.h"
 
+#include <yaml-cpp/yaml.h>
+
+
 int main(int argc, char **argv)
 {
-    if(argc < 4)
-    {
-        // TODO change questo
-        std::cerr << "\nUsage: ros2 run orbslam stereo path_to_vocabulary path_to_settings do_rectify" << std::endl;
-        return 1;
-    }
+    // if(argc < 4)
+    // {
+    //     std::cerr << "\nUsage: ros2 run orbslam stereo path_to_vocabulary path_to_settings do_rectify" << std::endl;
+    //     return 1;
+    // }
+
+        // TODO change questo come argomento
+    // std::string file_path = "config/orbslam3_odometry.yaml";
+    // std::ifstream fin(file_path);
+    // YAML::Node data = YAML::Load("config/orbslam3_odometry.yaml");
+
+    // if (data["PathVocabulary"]) {
+        // std::cout << "Value of 'key': " << data["PathVocabulary"].as<std::string>() << std::endl;
+    // }
+    // return 0;
+
+
+
 
     rclcpp::init(argc, argv);
 

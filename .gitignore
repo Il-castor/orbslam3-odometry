@@ -3,4 +3,5 @@ log/
 install/
 *.txt
 !src/orbslam3_odometry/CMakeLists.txt
+.vscode/
 

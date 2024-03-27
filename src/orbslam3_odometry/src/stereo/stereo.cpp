@@ -1,4 +1,4 @@
-#include "orbslam3_odometry_stereo.hpp"
+#include "stereo.hpp"
 
 #include<opencv2/core/core.hpp>
 #include<chrono>

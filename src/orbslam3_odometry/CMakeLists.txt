@@ -26,6 +26,7 @@ find_package(Sophus REQUIRED)
 find_package(Pangolin REQUIRED)
 find_package(ORB_SLAM3 REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 
 include_directories(
@@ -38,14 +39,15 @@ link_directories(
   include
 )
 
-add_executable(orbslam3_odometry_stereo
-  src/orbslam3_odometry_stereo.cpp
-  src/orbslam3_odometry_stereo_node.cpp
+add_executable(orbslam3_odometry
+  src/stereo/stereo.cpp
+  src/monocular/monocular.cpp
+  src/main_node.cpp
 )
-ament_target_dependencies(orbslam3_odometry_stereo rclcpp sensor_msgs cv_bridge message_filters ORB_SLAM3 Pangolin nav_msgs)
+ament_target_dependencies(orbslam3_odometry rclcpp sensor_msgs cv_bridge message_filters ORB_SLAM3 Pangolin nav_msgs yaml-cpp)
 
 
-install(TARGETS orbslam3_odometry_stereo DESTINATION lib/${PROJECT_NAME})
+install(TARGETS orbslam3_odometry DESTINATION lib/${PROJECT_NAME})
 
 # Install launch files.
 #install(DIRECTORY launch config vocabulary
