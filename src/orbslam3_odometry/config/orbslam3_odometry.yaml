@@ -11,37 +11,37 @@
     topic_header_frame_id: os_track
     topic_child_frame_id: orbslam3
 
-  orbslam3_parameters:
-    # ORB_SLAM3 mode. Poxibilities are:
-    #   mono
-    #   stereo
-    #   stereo_imu
-    # Monocular mode will subscribe to topic_camera_left
-    system_mode: stereo 
-    
-    # Path to vocabulary of ORB_SLAM3
-    path_vocabulary: config/ORBvoc.txt
+    orbslam3_parameters:
+      # ORB_SLAM3 mode. Poxibilities are:
+      #   mono
+      #   stereo
+      #   stereo_imu
+      # Monocular mode will subscribe to topic_camera_left
+      system_mode: stereo 
+      
+      # Path to vocabulary of ORB_SLAM3
+      path_vocabulary: config/ORBvoc.txt
 
-    # Path to yaml settings (for ORB_SLAM3)
-    path_yaml_settings: config/zed2-stereo.yaml
+      # Path to yaml settings (for ORB_SLAM3)
+      path_yaml_settings: config/zed2-stereo.yaml
 
-    # Visualizer of map created by ORBSLAM3 and images passed with ROS2. 
-    #   0 to disable the visualizer
-    #   1 to enable it
-    pangolin_visualizer: 0
+      # Visualizer of map created by ORBSLAM3 and images passed with ROS2. 
+      #   0 to disable the visualizer
+      #   1 to enable it
+      pangolin_visualizer: 0
 
 
-    # If enabled it saves odometry calculated by ORB_SLAM3 in a file with a line for every processed image. 
-    # In each line there are: timestamp of the image, position x, position y, position z, quaternion x, quaternion y, quaternion z, quaternion w
-    # all separated by a space. 
-    # DA DEFINIRE: Salvarla gia' ruotata o no??
-    #   0 to disable the saving of trajectory
-    #   path of file to enable it
-    save_odometry_to_file: 0
-    # save_odometry_to_file: trajectory.txt
+      # If enabled it saves odometry calculated by ORB_SLAM3 in a file with a line for every processed image. 
+      # In each line there are: timestamp of the image, position x, position y, position z, quaternion x, quaternion y, quaternion z, quaternion w
+      # all separated by a space. 
+      # DA DEFINIRE: Salvarla gia' ruotata o no??
+      #   0 to disable the saving of trajectory
+      #   path of file to enable it
+      save_odometry_to_file: 0
+      # save_odometry_to_file: trajectory.txt
 
-    
+      
 
-# TODO 
-#   Mantieni questa struttura https://github.com/mmr-driverless/mmr-drive/blob/master/src/4_actuation/canopen_bridge/config/canopen_bridge.yaml
+  # TODO 
+  #   Mantieni questa struttura https://github.com/mmr-driverless/mmr-drive/blob/master/src/4_actuation/canopen_bridge/config/canopen_bridge.yaml
 

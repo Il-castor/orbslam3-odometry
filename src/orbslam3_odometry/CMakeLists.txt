@@ -49,9 +49,16 @@ ament_target_dependencies(orbslam3_odometry rclcpp sensor_msgs cv_bridge message
 
 install(TARGETS orbslam3_odometry DESTINATION lib/${PROJECT_NAME})
 
+# Install launch directory
+install(DIRECTORY
+  launch
+  DESTINATION share/${PROJECT_NAME}
+)
+
 # Install launch files.
-#install(DIRECTORY launch config vocabulary
-#  DESTINATION share/${PROJECT_NAME}/)
+install(DIRECTORY launch config
+  config
+  DESTINATION share/${PROJECT_NAME}/)
 
 ament_package()
 

@@ -12,14 +12,19 @@ using std::placeholders::_2;
 const char* TOPIC_PUB_QUAD = "/Odometry/orbSlamOdom";
 
 StereoSlamNode::StereoSlamNode(ORB_SLAM3::System* pSLAM, const string &strSettingsFile, const string &strDoRectify)
-:   Node("ORB_SLAM3_ROS2"),
+:   Node("orbslam3_odometry"),
     m_SLAM(pSLAM)
 {
-    stringstream ss(strDoRectify);
-    ss >> boolalpha >> doRectify;
+    declare_parameter("topic_camera_left", "pippo");
 
-    std::cout << "FENICOTTERO - dorectify: "  << strDoRectify << "\tBoolean:" << doRectify <<endl;
+    //stringstream ss(strDoRectify);
+    //ss >> boolalpha >> doRectify;
+    std::string my_param = ""; 
+    get_parameter("topic_camera_left", my_param);
+    std::cout << "FENICOTTERO " << my_param << endl;
 
+    //std::cout << "FENICOTTERO - dorectify: "  << strDoRectify << "\tBoolean:" << doRectify <<endl;
+    bool doRectify = true;
     if (doRectify){
         
 
