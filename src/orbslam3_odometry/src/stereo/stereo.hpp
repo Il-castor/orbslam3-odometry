@@ -40,13 +40,17 @@ private:
     cv_bridge::CvImageConstPtr cv_ptrLeft;
     cv_bridge::CvImageConstPtr cv_ptrRight;
 
-    int img_proc;
-
     std::shared_ptr<message_filters::Subscriber<sensor_msgs::msg::Image> > left_sub;
     std::shared_ptr<message_filters::Subscriber<sensor_msgs::msg::Image> > right_sub;
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr quaternion_pub;
 
     std::shared_ptr<message_filters::Synchronizer<approximate_sync_policy> > syncApproximate;
-};
+    
 
+    void loadParameters();
+    /*List of all parameters */
+    std::string camera_left, camera_right, imu, header_id_frame, child_id_frame; 
+    std::string topic_pub_quat; 
+
+};
 #endif

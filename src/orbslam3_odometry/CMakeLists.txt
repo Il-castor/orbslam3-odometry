@@ -13,8 +13,7 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  #add_compile_options(-Wall -Wextra -Wpedantic)
-  add_compile_options(-O3 -march=native)
+  add_compile_options(-Wall -Wextra -Wpedantic -O3 -march=native)
 endif()
 
 find_package(ament_cmake REQUIRED)
@@ -61,4 +60,3 @@ install(DIRECTORY launch config
   DESTINATION share/${PROJECT_NAME}/)
 
 ament_package()
-

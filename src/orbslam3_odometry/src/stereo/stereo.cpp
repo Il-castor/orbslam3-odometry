@@ -3,31 +3,61 @@
 #include<opencv2/core/core.hpp>
 #include<chrono>
 
+#define DEBUG false
 // #include <geometry_msgs/msg/pose_stamped.h> 
 // #include <geometry_msgs/msg/dds_connext/PoseStamped_.h>
 
-using std::placeholders::_1; // TODO check se si possono cavare
+using std::placeholders::_1; 
 using std::placeholders::_2;
 
-const char* TOPIC_PUB_QUAD = "/Odometry/orbSlamOdom";
+
+void StereoSlamNode::loadParameters(){
+    /* ***** DECLARING PARAMETERS ***** */
+
+    declare_parameter("topic_camera_left", "/camera/left_image");
+    declare_parameter("topic_camera_right", "/camera/right_image");
+    declare_parameter("topic_imu", "/imu/data");
+    declare_parameter("topic_orbslam_odometry", "/Odometry/orbSlamOdom");
+    declare_parameter("topic_header_frame_id", "os_track");
+    declare_parameter("topic_child_frame_id", "orbslam3");
+    
+    /* ******************************** */
+
+	/* ***** READING PARAMETERS ***** */
+
+    get_parameter("topic_camera_left", this->camera_left);
+    get_parameter("topic_camera_right", this->camera_right);
+    get_parameter("topic_imu", this->imu);
+    get_parameter("topic_orbslam_odometry", this->topic_pub_quat);
+    get_parameter("topic_header_frame_id", this->header_id_frame);
+    get_parameter("topic_child_frame_id", this->child_id_frame);
+}
 
 StereoSlamNode::StereoSlamNode(ORB_SLAM3::System* pSLAM, const string &strSettingsFile, const string &strDoRectify)
 :   Node("orbslam3_odometry"),
     m_SLAM(pSLAM)
 {
-    declare_parameter("topic_camera_left", "pippo");
+    this->loadParameters();
+    stringstream ss(strDoRectify);
+    ss >> boolalpha >> doRectify;
+    
 
-    //stringstream ss(strDoRectify);
-    //ss >> boolalpha >> doRectify;
-    std::string my_param = ""; 
-    get_parameter("topic_camera_left", my_param);
-    std::cout << "FENICOTTERO " << my_param << endl;
+    std::cout << "strDoRectify " << boolalpha  << " " <<  doRectify << std::endl;
+    
+#ifdef DEBUG
+    RCLCPP_INFO(this->get_logger(), "Hello %s", this->camera_left.c_str());
+    RCLCPP_INFO(this->get_logger(), "Hello %s", this->camera_right.c_str());
+    RCLCPP_INFO(this->get_logger(), "Hello %s", this->imu.c_str());
+    RCLCPP_INFO(this->get_logger(), "Hello %s", this->header_id_frame.c_str());
+    RCLCPP_INFO(this->get_logger(), "Hello %s", this->child_id_frame.c_str());
+    RCLCPP_INFO(this->get_logger(), "Hello %s", this->topic_pub_quat.c_str());
+#endif
+    
 
-    //std::cout << "FENICOTTERO - dorectify: "  << strDoRectify << "\tBoolean:" << doRectify <<endl;
-    bool doRectify = true;
+
+    std::cout << "FENICOTTERO - dorectify: "  << strDoRectify << "\tBoolean:" << doRectify <<endl;
+    
     if (doRectify){
-        
-
         cv::FileStorage fsSettings(strSettingsFile, cv::FileStorage::READ);
         if(!fsSettings.isOpened()){
             cerr << "ERROR: Wrong path to settings" << endl;
@@ -63,17 +93,14 @@ StereoSlamNode::StereoSlamNode(ORB_SLAM3::System* pSLAM, const string &strSettin
         cv::initUndistortRectifyMap(K_r,D_r,R_r,P_r.rowRange(0,3).colRange(0,3),cv::Size(cols_r,rows_r),CV_32F,M1r,M2r);
     }
 
-    left_sub = std::make_shared<message_filters::Subscriber<ImageMsg> >(shared_ptr<rclcpp::Node>(this), "/zed/zed_node/left/image_rect_color");
-    right_sub = std::make_shared<message_filters::Subscriber<ImageMsg> >(shared_ptr<rclcpp::Node>(this), "/zed/zed_node/right/image_rect_color");
-    //quaternion_pub = this->create_publisher<nav_msgs::msg::Odometry>("/Odometry/orbSlamOdom", 10);
-    quaternion_pub = this->create_publisher<nav_msgs::msg::Odometry>(TOPIC_PUB_QUAD, 10);
+    left_sub = std::make_shared<message_filters::Subscriber<ImageMsg> >(shared_ptr<rclcpp::Node>(this), this->camera_left);
+    right_sub = std::make_shared<message_filters::Subscriber<ImageMsg> >(shared_ptr<rclcpp::Node>(this), this->camera_right);
+    quaternion_pub = this->create_publisher<nav_msgs::msg::Odometry>(topic_pub_quat, 10);
     
 
     syncApproximate = std::make_shared<message_filters::Synchronizer<approximate_sync_policy> >(approximate_sync_policy(10), *left_sub, *right_sub);
     syncApproximate->registerCallback(&StereoSlamNode::GrabStereo, this);
     
-    img_proc = 0;
-
     std::cout << "Fine costruttore" << endl;
 
 }
@@ -89,53 +116,21 @@ StereoSlamNode::~StereoSlamNode()
 }
 
 /**
- * Funzione che ritorna una stringa col quaternione, ogni valore e' separato da uno spazio.
+ * Function that returns a string with quaternion, each value is separated by a space.
 */
 static std::string quaternionToString(const Eigen::Quaternionf& q){
     std::stringstream ss;
-    // ss << q.x() << " " << q.y() << " " << q.z() << " " << q.w() ;
     ss << setprecision(9) << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
     return ss.str();
 }
 
-//#define ESTRAI_IMMAGINI
-#ifdef ESTRAI_IMMAGINI
-void StereoSlamNode::GrabStereo(const ImageMsg::SharedPtr msgLeft, const ImageMsg::SharedPtr msgRight){
-    try
-    {
-        cv_bridge_ = cv_bridge::toCvCopy(msgLeft, sensor_msgs::image_encodings::BGR8);
-    }
-    catch (cv_bridge::Exception &e)
-    {
-        RCLCPP_ERROR(this->get_logger(), "cv_bridge exception: %s", e.what());
-        return;
-    }
 
-    // auto timestamp = msg->header.stamp;
-    // auto sec = std::to_string(timestamp.sec);
-    // auto nsec = std::to_string(timestamp.nanosec);
-
-    //std::string image_filename = main_dir + "/" + camera_name + "/" + sec + "." + nsec + ".png";
-    std::string image_filename =  "images/left/" + img_proc + ".png";
-    cv::imwrite(image_filename, cv_bridge_->image);
-    RCLCPP_INFO(this->get_logger(), "[LEFT] Saved %s image: %s", camera_name.c_str(), image_filename.c_str());
-    
-    
-    
-    
-    
-    img_proc++;
-
-}
-
-#else
 void StereoSlamNode::GrabStereo(const ImageMsg::SharedPtr msgLeft, const ImageMsg::SharedPtr msgRight)
 {
-    
-    // Tempo "inizio"
+    // init time
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
-    // Copy the ros rgb image message to cv::Mat.
+    // Copy the ros left image message to cv::Mat.
     try
     {
         cv_ptrLeft = cv_bridge::toCvShare(msgLeft);
@@ -146,7 +141,7 @@ void StereoSlamNode::GrabStereo(const ImageMsg::SharedPtr msgLeft, const ImageMs
         return;
     }
 
-    // Copy the ros depth image message to cv::Mat.
+    // Copy the ros right image message to cv::Mat.
     try
     {
         cv_ptrRight = cv_bridge::toCvShare(msgRight);
@@ -157,31 +152,27 @@ void StereoSlamNode::GrabStereo(const ImageMsg::SharedPtr msgLeft, const ImageMs
         return;
     }
 
-    // Prendo il quaternione
+    // Quaternion
     Sophus::SE3f Tcw ;
     if (doRectify){
         cv::Mat imLeft, imRight;
         cv::remap(cv_ptrLeft->image,imLeft,M1l,M2l,cv::INTER_LINEAR);
         cv::remap(cv_ptrRight->image,imRight,M1r,M2r,cv::INTER_LINEAR);
-        //std::cout << "FENICOTTERO - IF" << endl;
         Tcw = m_SLAM->TrackStereo(imLeft, imRight, Utility::StampToSec(msgLeft->header.stamp));
     } else {
-        //std::cout << "FENICOTTERO - ELSE" << endl;
         Tcw = m_SLAM->TrackStereo(cv_ptrLeft->image, cv_ptrRight->image, Utility::StampToSec(msgLeft->header.stamp));
-
     }
     Sophus::SE3f Twc = Tcw.inverse();
     Eigen::Vector3f twc = Twc.translation();    // TODO capire cosa sia e se serve
     Eigen::Quaternionf q = Twc.unit_quaternion();
 
-    // Stringa che contiene il quaternione
+    // String containing the quaternion
     std::string messaggio_quaternion  = quaternionToString(q);
 
-    // "Nome" del file (nel formato ASL)
+    // "filename" (in ASL format)
     double timestamp = Utility::StampToSec(msgLeft->header.stamp);  
         
-    // Pubblico timestamp e quaternione
-    // auto message = std_msgs::msg::String();
+    // I publish timestamp and quaternion
     auto message = nav_msgs::msg::Odometry();
     geometry_msgs::msg::Pose output_pose{};
     
@@ -189,27 +180,25 @@ void StereoSlamNode::GrabStereo(const ImageMsg::SharedPtr msgLeft, const ImageMs
     output_pose.position.y = -twc.x();
     output_pose.position.z = 0 ;
 
-     output_pose.orientation.x = -q.z() ;
+    output_pose.orientation.x = -q.z() ;
     output_pose.orientation.y = -q.x();
     output_pose.orientation.z = -q.y() ;
     output_pose.orientation.w = q.w();
  
 
     message.pose.pose = output_pose;
-    message.header.frame_id = "fl_track";
-    message.child_frame_id = "orbslam3";
+    //message.header.frame_id = "fl_track";
+    //message.child_frame_id = "orbslam3";
+    message.header.frame_id = header_id_frame;
+    message.child_frame_id = child_id_frame; 
 
-
-    //message.data = std::to_string(timestamp) + " " + messaggio_quaternion + "\n";
-    // RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
     quaternion_pub->publish(message);
 
-    // Tempo "fine" e salvataggio tempi. File con i tempi: 
+    // "End" time and saving times. File with times:
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     double tempo = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t2 - t1).count();
-//    m_SLAM->InsertTrackTime(tempo); 
+    m_SLAM->InsertTrackTime(tempo); 
     //TODO cercare di capire perche' vengono inseriti meno tempi 
     //TODO forse perche' viene chiamata sempre TrackTime TUM 
 
 }
-#endif
