@@ -14,6 +14,7 @@
 #include "orbslam3_odometry/utility.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "nav_msgs/msg/odometry.hpp"
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 class MonocularSlamNode : public rclcpp::Node
 {
@@ -39,8 +40,10 @@ private:
     /*List of all parameters */
     std::string camera_left, camera_right, imu, header_id_frame, child_id_frame; 
     std::string topic_pub_quat; 
-
     bool isCameraLeft;
+    int scale_position_mono;
+    int degree_move_pose_mono;
+
 };
 
 #endif

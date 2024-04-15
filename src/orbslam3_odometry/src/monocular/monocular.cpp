@@ -15,6 +15,8 @@ void MonocularSlamNode::loadParameters()
     declare_parameter("topic_header_frame_id", "os_track");
     declare_parameter("topic_child_frame_id", "orbslam3");
     declare_parameter("is_camera_left", true);
+    declare_parameter("scale_position_mono", 1);
+    declare_parameter("degree_move_pose_mono", 0);
 
     /* ******************************** */
 
@@ -27,6 +29,9 @@ void MonocularSlamNode::loadParameters()
     get_parameter("topic_header_frame_id", this->header_id_frame);
     get_parameter("topic_child_frame_id", this->child_id_frame);
     get_parameter("is_camera_left", this->isCameraLeft);
+    get_parameter("scale_position_mono", this->scale_position_mono);
+    get_parameter("degree_move_pose_mono", this->degree_move_pose_mono);
+
 }
 
 MonocularSlamNode::MonocularSlamNode(ORB_SLAM3::System *pSLAM)
@@ -42,6 +47,7 @@ MonocularSlamNode::MonocularSlamNode(ORB_SLAM3::System *pSLAM)
             this->camera_left,
             10,
             std::bind(&MonocularSlamNode::GrabImage, this, std::placeholders::_1));
+        RCLCPP_INFO(this->get_logger(), "ORB-SLAM3 STARTED IN MONOCULAR MODE. NODE WILL WAIT FOR IMAGES IN TOPIC %s", this->camera_left.c_str());
     }
     else
     {
@@ -49,11 +55,12 @@ MonocularSlamNode::MonocularSlamNode(ORB_SLAM3::System *pSLAM)
             this->camera_right,
             10,
             std::bind(&MonocularSlamNode::GrabImage, this, std::placeholders::_1));
+        RCLCPP_INFO(this->get_logger(), "ORB-SLAM3 STARTED IN MONOCULAR MODE. NODE WILL WAIT FOR IMAGES IN TOPIC %s", this->camera_right.c_str());
     }
 
     quaternion_pub = this->create_publisher<nav_msgs::msg::Odometry>(topic_pub_quat, 10);
 
-    std::cout << "End Costructor" << std::endl;
+    // std::cout << "End Costructor" << std::endl;
 }
 
 MonocularSlamNode::~MonocularSlamNode()
@@ -115,14 +122,29 @@ void MonocularSlamNode::GrabImage(const ImageMsg::SharedPtr msg)
     auto message = nav_msgs::msg::Odometry();
     geometry_msgs::msg::Pose output_pose{};
 
-    output_pose.position.x = twc.z();
-    output_pose.position.y = -twc.x();
+    output_pose.position.x = twc.z() * this->scale_position_mono;
+    output_pose.position.y = -twc.x() * this->scale_position_mono;
     output_pose.position.z = 0;
 
     output_pose.orientation.x = -q.z();
     output_pose.orientation.y = -q.x();
     output_pose.orientation.z = -q.y();
     output_pose.orientation.w = q.w();
+
+    if (this->degree_move_pose_mono != 0){
+        // Move position and orientation of specified degree
+        // TODO position
+        
+        // Orientation
+        tf2::Quaternion tf2_quat;
+        tf2::fromMsg(output_pose.orientation, tf2_quat);
+
+        double roll, pitch, yaw;
+        tf2::Matrix3x3 m(tf2_quat);
+        m.getRPY(roll, pitch, yaw);
+        tf2_quat.setRPY(0, 0, yaw-(this->degree_move_pose_mono * (M_PI / 180.0))); 
+        output_pose.orientation = tf2::toMsg(tf2_quat);
+    }
 
     message.pose.pose = output_pose;
     message.header.frame_id = header_id_frame;

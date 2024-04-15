@@ -26,6 +26,7 @@ find_package(Pangolin REQUIRED)
 find_package(ORB_SLAM3 REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(yaml-cpp REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 
 
 include_directories(

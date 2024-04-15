@@ -42,17 +42,17 @@ StereoSlamNode::StereoSlamNode(ORB_SLAM3::System *pSLAM, const string &strSettin
     std::cout << "strDoRectify " << boolalpha << " " << doRectify << std::endl;
 
 #ifdef DEBUG
-    RCLCPP_INFO(this->get_logger(), "Hello %s", this->camera_left.c_str());
-    RCLCPP_INFO(this->get_logger(), "Hello %s", this->camera_right.c_str());
-    RCLCPP_INFO(this->get_logger(), "Hello %s", this->imu.c_str());
-    RCLCPP_INFO(this->get_logger(), "Hello %s", this->header_id_frame.c_str());
-    RCLCPP_INFO(this->get_logger(), "Hello %s", this->child_id_frame.c_str());
-    RCLCPP_INFO(this->get_logger(), "Hello %s", this->topic_pub_quat.c_str());
+    RCLCPP_INFO(this->get_logger(), "Topic camera left: %s", this->camera_left.c_str());
+    RCLCPP_INFO(this->get_logger(), "Topic camera right: %s", this->camera_right.c_str());
+    RCLCPP_INFO(this->get_logger(), "Topic imu: %s", this->imu.c_str());
+    RCLCPP_INFO(this->get_logger(), "header_id_frame: %s", this->header_id_frame.c_str());
+    RCLCPP_INFO(this->get_logger(), "child_id_frame: %s", this->child_id_frame.c_str());
+    RCLCPP_INFO(this->get_logger(), "topic_orbslam_odometry: %s", this->topic_pub_quat.c_str());
 #endif
 
     // std::cout << "dorectify: "  << strDoRectify << "\tBoolean:" << doRectify <<endl;
 
-    if (doRectify)
+    if (doRectify)  // TODO questo io lo caverei e metterei il nostro codice
     {
         cv::FileStorage fsSettings(strSettingsFile, cv::FileStorage::READ);
         if (!fsSettings.isOpened())
@@ -98,7 +98,9 @@ StereoSlamNode::StereoSlamNode(ORB_SLAM3::System *pSLAM, const string &strSettin
     syncApproximate = std::make_shared<message_filters::Synchronizer<approximate_sync_policy>>(approximate_sync_policy(10), *left_sub, *right_sub);
     syncApproximate->registerCallback(&StereoSlamNode::GrabStereo, this);
 
-    std::cout << "End Costructor" << endl;
+    RCLCPP_INFO(this->get_logger(), "ORB-SLAM3 STARTED IN STEREO MODE. NODE WILL WAIT FOR IMAGES IN TOPICS %s and %s", this->camera_left.c_str(), this->camera_right.c_str());
+
+    // std::cout << "End Costructor" << endl;
 }
 
 StereoSlamNode::~StereoSlamNode()
