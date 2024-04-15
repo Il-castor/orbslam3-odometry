@@ -12,6 +12,8 @@
 #include "Tracking.h"
 
 #include "orbslam3_odometry/utility.hpp"
+#include "std_msgs/msg/string.hpp"
+#include "nav_msgs/msg/odometry.hpp"
 
 class MonocularSlamNode : public rclcpp::Node
 {
@@ -30,6 +32,15 @@ private:
     cv_bridge::CvImagePtr m_cvImPtr;
 
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr m_image_subscriber;
+    
+    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr quaternion_pub;
+
+    void loadParameters();
+    /*List of all parameters */
+    std::string camera_left, camera_right, imu, header_id_frame, child_id_frame; 
+    std::string topic_pub_quat; 
+
+    bool isCameraLeft;
 };
 
 #endif
