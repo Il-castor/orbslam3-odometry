@@ -18,8 +18,8 @@ $ sudo apt install ros-$ROS_DISTRO-vision-opencv && sudo apt install ros-$ROS_DI
 ``` bash
 git clone https://github.com/Il-castor/orbslam3-odometry.git
 ```
-2. Change this [line](https://github.com/Il-castor/orbslam3-odometry/blob/36c9b22c01ce51dfad5b0464d0b2b9f3dd492717/src/orbslam3_odometry/CMakeLists.txt#L6) to your own `python site-packages` path
-3. Change this [line](https://github.com/Il-castor/orbslam3-odometry/blob/36c9b22c01ce51dfad5b0464d0b2b9f3dd492717/src/orbslam3_odometry/cmake/FindORB_SLAM3.cmake#L8) to your own `ORB_SLAM3` path
+2. Change this [line](src/orbslam3_odometry/CMakeLists.txt#L6) to your own `python site-packages` path
+3. Change this [line](src/orbslam3_odometry/cmake/FindORB_SLAM3.cmake#L8) to your own `ORB_SLAM3` path
 
 Build 
 ``` bash
@@ -48,9 +48,19 @@ $ ros2 launch orbslam3_odometry orbslam3-odometry_launch.py
 ```
 
 
-For stop the node press `ctrl-c` and this save ORB_SLAM3 statistics txt in your folder. 
+To stop the node press `ctrl-c` and this save ORB_SLAM3 statistics txt in your folder. 
+
+
+## How to get stereo parameters
+Use MATLAB to stereo-calibrate the cameras. Once it's done, export the stereo parameters result in the workspase. Use [this MATLAB script](src/orbslam3_odometry/from_matlab_to_opencv/from_matlab_to_opencv.m) to convert parameters to OpenCV and write them in a file. 
+
+Take the content of the generated <i>orbslam_parameters.txt</i> file and copy it in the settings yaml settings file. Set just_check_stereo_calibration to true to view the results of the stereo-calibration, then reset it to false to start ORB-SLAM3 in the next execution.
+
+
+
 
 ### TODO
+La stereo non permette la subscription best effort delle camere. va fixato come nella stereo-inertial
 Controlla se sono stati fatti 
 Aggiungi nodo ros con orbslam
 Stesso formato di:

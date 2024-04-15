@@ -43,6 +43,8 @@ add_executable(orbslam3_odometry
   src/stereo/stereo.cpp
   src/monocular/monocular.cpp
   src/main_node.cpp
+  src/stereo/just_check_stereo_calibration.cpp
+  src/stereo/stereo_rectification.cpp
 )
 ament_target_dependencies(orbslam3_odometry rclcpp sensor_msgs cv_bridge message_filters ORB_SLAM3 Pangolin nav_msgs yaml-cpp)
 

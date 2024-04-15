@@ -1,7 +1,7 @@
 /orbslam3_odometry: 
   ros__parameters: 
-    topic_camera_left: /zed/zed_node/left/image_rect_color
-    topic_camera_right: /zed/zed_node/right/image_rect_color
+    topic_camera_left: /cam0/image_raw
+    topic_camera_right: /cam1/image_raw
     topic_imu: /imu/data
     
     # For monocular version only. It indicates whether to subscribe to camera left or right topic for images. 
@@ -29,7 +29,7 @@
     path_vocabulary: src/orbslam3_odometry/config/ORBvoc.txt
 
     # Full file path to yaml settings (for ORB_SLAM3)
-    path_yaml_settings: src/orbslam3_odometry/config/zed2-stereo.yaml
+    path_yaml_settings: src/orbslam3_odometry/config/basler_stereo_17_02_24.yaml
 
     # ORB_SLAM3 mode. Poxibilities are:
     #   mono
@@ -38,3 +38,6 @@
     # Monocular mode will subscribe to topic_camera_left 
     # if topic_is_camera_left is true 
     system_mode: mono 
+
+    # For stereo mode only. Doesn't make ORB_SLAM3 start. It just shows the results of the stereo calibration with the params in the path_yaml_settings
+    just_check_stereo_calibration: true
