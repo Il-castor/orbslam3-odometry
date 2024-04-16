@@ -3,6 +3,7 @@
 #include <opencv2/opencv.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include "stereo_rectification.h"
+#include "sensor_msgs/msg/compressed_image.hpp"
 
 using namespace std::chrono_literals;
 
@@ -15,7 +16,7 @@ public:
         this->loadParameters();
 
         rclcpp::QoS qos(rclcpp::KeepLast(10));
-        //qos.best_effort();
+        qos.best_effort();
         
         subscription_left = this->create_subscription<ImageMsg>(
             this->camera_left_topic, qos, std::bind(&JustCheckStereoCalibration::leftCallback, this, std::placeholders::_1));
@@ -33,7 +34,7 @@ public:
 
         // cv::namedWindow("Left NON Rectified", cv::WINDOW_NORMAL);
         // cv::namedWindow("Right NON Rectified", cv::WINDOW_NORMAL);
-
+        cont_salva_immagini = 0;
 
         sync_timer_ = this->create_wall_timer(100ms, std::bind(&JustCheckStereoCalibration::SyncImages, this));
 
@@ -41,7 +42,7 @@ public:
 
 
 private:
-    using ImageMsg = sensor_msgs::msg::Image;
+    using ImageMsg = sensor_msgs::msg::CompressedImage; // + cambia le due callbacks delle immagini
 
     void loadParameters(){
 
@@ -56,12 +57,13 @@ private:
     void leftCallback(const ImageMsg::SharedPtr msg){
         try
         {
-            RCLCPP_INFO(this->get_logger(), "left" );
+            // RCLCPP_INFO(this->get_logger(), "left" );
 
-            left_image_ = cv_bridge::toCvShare(msg, "bgr8")->image;
+            // left_image_ = cv_bridge::toCvShare(msg, "bgr8")->image;  // For image
+            left_image_ = cv_bridge::toCvCopy(msg, "bgr8")->image;      // For compressed images
 
             // cv::imshow("Left NON Rectified", left_image_);
-            RCLCPP_INFO(this->get_logger(), "left ok" );
+            // RCLCPP_INFO(this->get_logger(), "left ok" );
         }
         catch (cv_bridge::Exception &e)
         {
@@ -74,13 +76,14 @@ private:
     void rightCallback(const ImageMsg::SharedPtr msg){
         try
         {
-            RCLCPP_INFO(this->get_logger(), "right" );
+            // RCLCPP_INFO(this->get_logger(), "right" );
 
-            right_image_ = cv_bridge::toCvShare(msg, "bgr8")->image;
+            // right_image_ = cv_bridge::toCvShare(msg, "bgr8")->image;
+            right_image_ = cv_bridge::toCvCopy(msg, "bgr8")->image;
 
             // cv::imshow("Right NON Rectified", right_image_);
 
-            RCLCPP_INFO(this->get_logger(), "right ok" );
+            // RCLCPP_INFO(this->get_logger(), "right ok" );
 
         }
         catch (cv_bridge::Exception &e)
@@ -93,15 +96,18 @@ private:
     
     void SyncImages()
     {
-        RCLCPP_INFO(this->get_logger(), "sono nel thread" );            
+        // RCLCPP_INFO(this->get_logger(), "sono nel thread" );           
 
         if (!left_image_.empty() && !right_image_.empty())
         {
+            // SHOW_RECTIFICATION for showing image rectification. if not defined it will save images
+
+#ifdef SHOW_RECTIFICATION
             RCLCPP_INFO(this->get_logger(), "rectification..." );
 
             cv::Mat img_non_cropped_L, img_non_cropped_R;
-            rectify_image(left_image_, map1_L, map2_L, common_roi);
-            rectify_image(right_image_, map1_R, map2_R, common_roi);
+            rectify_image(left_image_, map1_L, map2_L, common_roi, img_non_cropped_L);
+            rectify_image(right_image_, map1_R, map2_R, common_roi, img_non_cropped_R);
 
             // Draw horizontal lines on rectified images
             const int DISTANZA_RIGHE_PIXEL = 50;
@@ -115,8 +121,8 @@ private:
             }
 
             // Display the synchronized images
-            // cv::imshow("Left Rectified", left_image_);
-            // cv::imshow("Right Rectified", right_image_);
+            // cv::imshow("Left Rectified (non cropped)", img_non_cropped_L);
+            // cv::imshow("Right Rectified (non cropped)", img_non_cropped_R);
 
             // Perform stereo matching
             std::cout << "disparity map" << std::endl;    
@@ -127,7 +133,31 @@ private:
             right_image_.release();
 
 
-            int key = cv::waitKey(0);
+            int key = cv::waitKey(1);
+#else
+            // Show images (resized)
+            cv::Mat concatenated;
+            cv::Mat resizedImage1, resizedImage2;
+            cv::resize(left_image_, resizedImage1, cv::Size( left_image_.cols /2 , left_image_.rows /2));
+            cv::resize(right_image_, resizedImage2, cv::Size( left_image_.cols /2 , left_image_.rows /2));
+            cv::hconcat(resizedImage1, resizedImage2, concatenated);
+            cv::imshow("Left + Right ", concatenated);
+
+            // Save images if spacebar is pressed
+            int key = cv::waitKey(1);
+            if (key == 32) { // Spacebar was pressed
+                // watch -n1 ls -Rl /home/formula-student/immagini
+                std::string path = "/home/formula-student/immagini";
+                std::cout << "Salvo immagini. CONTROLLA CHE IL PATH " << path << " + SOTTOCARTELLE left E right ESISTANO" << std::endl;
+                cv::imwrite(path +"/left/"+std::to_string(cont_salva_immagini)+".jpg", left_image_);
+                cv::imwrite(path +"/right/"+std::to_string(cont_salva_immagini)+".jpg", right_image_);
+                cont_salva_immagini ++;
+                
+                left_image_.release();
+                right_image_.release();
+
+            }
+#endif
 
             // cv::waitKey(3000); // Adjust as needed
         }
@@ -152,6 +182,8 @@ private:
     cv::Mat  left_image_, right_image_;
 
     rclcpp::TimerBase::SharedPtr sync_timer_;
+
+    int cont_salva_immagini;
     
 
 };
