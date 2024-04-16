@@ -40,7 +40,7 @@
     #   stereo_imu
     # Monocular mode will subscribe to topic_camera_left 
     # if topic_is_camera_left is true 
-    system_mode: mono 
+    system_mode: stereo 
 
     # For stereo mode only. Doesn't make ORB_SLAM3 start. It just shows the results of the stereo calibration with the params in the path_yaml_settings
-    just_check_stereo_calibration: true
+    just_check_stereo_calibration: false

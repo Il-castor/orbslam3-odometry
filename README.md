@@ -55,23 +55,3 @@ To stop the node press `ctrl-c` and this save ORB_SLAM3 statistics txt in your f
 Use MATLAB to stereo-calibrate the cameras. Once it's done, export the stereo parameters result in the workspase. Use [this MATLAB script](src/orbslam3_odometry/from_matlab_to_opencv/from_matlab_to_opencv.m) to convert parameters to OpenCV and write them in a file. 
 
 Take the content of the generated <i>orbslam_parameters.txt</i> file and copy it in the settings yaml settings file. Set just_check_stereo_calibration to true to view the results of the stereo-calibration, then reset it to false to start ORB-SLAM3 in the next execution.
-
-
-
-
-### TODO
-La stereo non permette la subscription best effort delle camere. va fixato come nella stereo-inertial
-Controlla se sono stati fatti 
-Aggiungi nodo ros con orbslam
-Stesso formato di:
-	https://github.com/mmr-driverless/mmr-drive/tree/master/src/1_perception/fusion
-
-
-Possibili configurazioni:
-- Vocabolario
-- Path allo yaml
-- Enable/Disable pangolin
-- Topics pubblicazione e sottoscrizione
-- Fixed frame 
-- Salvare odometry su file
-- modify launch 
