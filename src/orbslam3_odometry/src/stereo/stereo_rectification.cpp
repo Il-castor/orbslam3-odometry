@@ -104,8 +104,8 @@ void readParameters(std::string path_yaml, cv::Mat &map1_L, cv::Mat &map2_L, cv:
 
 void rectify_image(cv::Mat &img, const cv::Mat &map1, const cv::Mat &map2, const cv::Rect &roi, cv::Mat &img_non_cropped){
     // Perform rectification (and cropping) of one image. 
-    // Saves rectified and cropped image in img.
-    // Saves rectified and NON cropped image in img_non_cropped (for disparity map)
+    // In img -> saves rectified and cropped image in img.
+    // In img_non_cropped -> saves rectified and NON cropped image in img_non_cropped (for disparity map)
     
     cv::remap(img, img_non_cropped, map1, map2, cv::INTER_LINEAR);
     img = img_non_cropped(roi);

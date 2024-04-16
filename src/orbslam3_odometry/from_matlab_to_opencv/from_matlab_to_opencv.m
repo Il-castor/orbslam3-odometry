@@ -27,7 +27,7 @@ fprintf(fileID, '\n');
 fprintf(fileID, 'Camera1.k1: %.12f\n', distortionCoefficients1(1));
 fprintf(fileID, 'Camera1.k2: %.12f\n', distortionCoefficients1(2));
 fprintf(fileID, 'Camera1.p1: %.12f\n', distortionCoefficients1(3));
-fprintf(fileID, 'Camera1.p1: %.12f\n', distortionCoefficients1(4));
+fprintf(fileID, 'Camera1.p2: %.12f\n', distortionCoefficients1(4));
 
 fprintf(fileID, '\n');
 
@@ -42,7 +42,7 @@ fprintf(fileID, '\n');
 fprintf(fileID, 'Camera2.k1: %.12f\n', distortionCoefficients2(1));
 fprintf(fileID, 'Camera2.k2: %.12f\n', distortionCoefficients2(2));
 fprintf(fileID, 'Camera2.p1: %.12f\n', distortionCoefficients2(3));
-fprintf(fileID, 'Camera2.p1: %.12f\n', distortionCoefficients2(4));
+fprintf(fileID, 'Camera2.p2: %.12f\n', distortionCoefficients2(4));
 
 fprintf(fileID, '\n');
 

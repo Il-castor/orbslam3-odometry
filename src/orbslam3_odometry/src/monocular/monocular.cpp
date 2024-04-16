@@ -132,10 +132,7 @@ void MonocularSlamNode::GrabImage(const ImageMsg::SharedPtr msg)
     output_pose.orientation.w = q.w();
 
     if (this->degree_move_pose_mono != 0){
-        // Move position and orientation of specified degree
-        // TODO position
-        
-        // Orientation
+        // Move orientation of specified degree
         tf2::Quaternion tf2_quat;
         tf2::fromMsg(output_pose.orientation, tf2_quat);
 
