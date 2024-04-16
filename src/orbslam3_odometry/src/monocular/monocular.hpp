@@ -15,6 +15,7 @@
 #include "std_msgs/msg/string.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include "sensor_msgs/msg/compressed_image.hpp"
 
 class MonocularSlamNode : public rclcpp::Node
 {
@@ -24,15 +25,15 @@ public:
     ~MonocularSlamNode();
 
 private:
-    using ImageMsg = sensor_msgs::msg::Image;
+    using ImageMsg = sensor_msgs::msg::CompressedImage;
 
-    void GrabImage(const sensor_msgs::msg::Image::SharedPtr msg);
+    void GrabImage(const ImageMsg::SharedPtr msg);
 
     ORB_SLAM3::System* m_SLAM;
 
     cv_bridge::CvImagePtr m_cvImPtr;
 
-    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr m_image_subscriber;
+    rclcpp::Subscription<ImageMsg>::SharedPtr m_image_subscriber;
     
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr quaternion_pub;
 

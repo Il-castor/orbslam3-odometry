@@ -39,13 +39,16 @@ MonocularSlamNode::MonocularSlamNode(ORB_SLAM3::System *pSLAM)
 {
     this->loadParameters();
 
+    rclcpp::QoS qos(rclcpp::KeepLast(10));
+    qos.best_effort();
+
     m_SLAM = pSLAM;
 
     if (this->isCameraLeft)
     {
         m_image_subscriber = this->create_subscription<ImageMsg>(
             this->camera_left,
-            10,
+            qos,
             std::bind(&MonocularSlamNode::GrabImage, this, std::placeholders::_1));
         RCLCPP_INFO(this->get_logger(), "ORB-SLAM3 STARTED IN MONOCULAR MODE. NODE WILL WAIT FOR IMAGES IN TOPIC %s", this->camera_left.c_str());
     }
@@ -53,7 +56,7 @@ MonocularSlamNode::MonocularSlamNode(ORB_SLAM3::System *pSLAM)
     {
         m_image_subscriber = this->create_subscription<ImageMsg>(
             this->camera_right,
-            10,
+            qos,
             std::bind(&MonocularSlamNode::GrabImage, this, std::placeholders::_1));
         RCLCPP_INFO(this->get_logger(), "ORB-SLAM3 STARTED IN MONOCULAR MODE. NODE WILL WAIT FOR IMAGES IN TOPIC %s", this->camera_right.c_str());
     }
@@ -91,12 +94,16 @@ static std::string quaternionToString(const Eigen::Quaternionf &q)
 
 void MonocularSlamNode::GrabImage(const ImageMsg::SharedPtr msg)
 {
+    RCLCPP_INFO(this->get_logger(), "Sono nella callback");
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
     // Copy the ros image message to cv::Mat.
     try
     {
-        m_cvImPtr = cv_bridge::toCvCopy(msg);
+        // m_cvImPtr = cv_bridge::toCvShare(msg, "bgr8");  // For image
+        m_cvImPtr = cv_bridge::toCvCopy(msg, "bgr8");      // For compressed images
+
+        // m_cvImPtr = cv_bridge::toCvCopy(msg); // Prima c'era questo
     }
     catch (cv_bridge::Exception &e)
     {
