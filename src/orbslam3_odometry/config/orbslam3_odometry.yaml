@@ -3,12 +3,21 @@
     # Topic for subscription
     topic_camera_left: /camera/left_image
     topic_camera_right: /camera/right_image
-    topic_imu: /imu/data
+    topic_imu: /imu/data  # will not be used
 
     # Topic for odometry pubblication
     topic_orbslam_odometry: /Odometry/orbSlamOdom
     topic_header_frame_id: os_track
     topic_child_frame_id: orbslam3
+
+    # ORB_SLAM3 mode. Poxibilities are:
+    #   mono
+    #   stereo
+    #   stereo_imu    # will not be used
+    # Monocular mode will subscribe to topic_camera_left 
+    # if topic_is_camera_left is true 
+    system_mode: stereo 
+
     
     # For monocular version only. It indicates whether to subscribe to camera left or right topic for images. 
     #   true    -> camera left's topic 
@@ -33,14 +42,6 @@
 
     # Full file path to yaml settings (for ORB_SLAM3)
     path_yaml_settings: src/orbslam3_odometry/config/basler_stereo_17_02_24.yaml
-
-    # ORB_SLAM3 mode. Poxibilities are:
-    #   mono
-    #   stereo
-    #   stereo_imu
-    # Monocular mode will subscribe to topic_camera_left 
-    # if topic_is_camera_left is true 
-    system_mode: stereo 
 
     # For stereo mode only. Doesn't make ORB_SLAM3 start. It just shows the results of the stereo calibration with the params in the path_yaml_settings
     just_check_stereo_calibration: false

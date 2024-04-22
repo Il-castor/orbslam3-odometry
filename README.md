@@ -40,7 +40,7 @@ $ sudo make install
 $ source install/local_setup.bash
 ```
 
-2. Modify parameters in `config/orbslam3_odometry.yaml` according to your system settings
+2. Modify parameters in `config/orbslam3_odometry.yaml` according to your system settings. Follow [these instructions](full_documentation.md). 
 
 3. Launch 
 ``` bash
@@ -51,7 +51,3 @@ $ ros2 launch orbslam3_odometry orbslam3-odometry_launch.py
 To stop the node press `ctrl-c` and this save ORB_SLAM3 statistics txt in your folder. 
 
 
-## How to get stereo parameters
-Use MATLAB to stereo-calibrate the cameras. Once it's done, export the stereo parameters result in the workspase. Use [this MATLAB script](src/orbslam3_odometry/from_matlab_to_opencv/from_matlab_to_opencv.m) to convert parameters to OpenCV and write them in a file. 
-
-Take the content of the generated <i>orbslam_parameters.txt</i> file and copy it in the settings yaml settings file. Set just_check_stereo_calibration to true to view the results of the stereo-calibration, then reset it to false to start ORB-SLAM3 in the next execution.

@@ -1,6 +1,13 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
 
+/**
+Function that reads the parameters contained in the path_yaml file. 
+Of course, this function must be called once at the beginning of the execution.
+The only input is path_yaml, that must be the path of the settings file of ORB-SLAM3.
+All the other variables (map1_L,map2_L,roi_L, map1_R, map2_R, roi_R) are the output of the stereoRectification and undistortion.
+The first three (map1_L,map2_L,roi_L) are for the left camera (Camera1), while the other three are for the right (Camera2).
+*/
 void readParameters(std::string path_yaml, cv::Mat &map1_L, cv::Mat &map2_L, cv::Rect &roi_L, cv::Mat &map1_R, cv::Mat &map2_R, cv::Rect &roi_R) {
 
     // Load the YAML file
@@ -101,9 +108,15 @@ void readParameters(std::string path_yaml, cv::Mat &map1_L, cv::Mat &map2_L, cv:
 }
 
 
+/**
+This function performs rectification of the image. 
+- img is both an input and output value. The expected image is the image that you want to rectify and crop. The output image is the rectified and cropped image.
+- img_non_cropped an output value. It contains the rectified (and NOT cropped) image.
+- map1, map2, roi are the output of the readParameters function. 
 
+Tip: in order to have left and right cropped images of the same size, in the parameter roi, instead of providing roi_L and roi_R, provide for both cameras (roi_L & roi_R)
+*/
 void rectify_image(cv::Mat &img, const cv::Mat &map1, const cv::Mat &map2, const cv::Rect &roi, cv::Mat &img_non_cropped){
-    // Perform rectification (and cropping) of one image. 
     // In img -> saves rectified and cropped image in img.
     // In img_non_cropped -> saves rectified and NON cropped image in img_non_cropped (for disparity map)
     
@@ -111,12 +124,24 @@ void rectify_image(cv::Mat &img, const cv::Mat &map1, const cv::Mat &map2, const
     img = img_non_cropped(roi);
 }
 
-
+/**
+Same as above, but img_non_cropped will not be provided. 
+img is still both an input and output value. The expected image is the image that you want to rectify and crop. The output image is the rectified and cropped image.
+*/
 void rectify_image(cv::Mat &img, const cv::Mat &map1, const cv::Mat &map2, const cv::Rect &roi){
     // Perform rectification (and cropping) of one image
     rectify_image(img, map1, map2, roi, img);
 }
 
+
+/**
+Function that shows the disparity map of the left and right images.
+The two input images are the rectified left and right images.
+THE IMAGES MUST BE OF THE SAME SIZE, so you can provide:
+- rectified but not cropped images 
+or
+- rectified and cropped images, where the crop was made with the roi=(roi_L & roi_R)
+*/
 void show_disparity(const cv::Mat &img1_non_cropped, const cv::Mat &img2_non_cropped){
     cv::Mat disparityMap;
     int numDisparities = 16;

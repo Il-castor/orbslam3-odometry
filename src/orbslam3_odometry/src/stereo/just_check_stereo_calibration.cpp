@@ -24,7 +24,7 @@ public:
             this->camera_right_topic, qos, std::bind(&JustCheckStereoCalibration::rightCallback, this, std::placeholders::_1));
 
         
-        
+        // Read the parametes and compute the common_roi, so that cropped and rectified images will have the same size
         readParameters(strSettingsFile, map1_L, map2_L, roi_L, map1_R, map2_R, roi_R) ;
         common_roi = roi_L & roi_R;
 
@@ -100,11 +100,12 @@ private:
 
         if (!left_image_.empty() && !right_image_.empty())
         {
-            // SHOW_RECTIFICATION for showing image rectification. if not defined it will save images
+            // SHOW_RECTIFICATION for showing image rectification. if not defined it will save PNG images
 
 #ifdef SHOW_RECTIFICATION
             RCLCPP_INFO(this->get_logger(), "rectification..." );
 
+            // Perform stereo rectification. I save also the rectified but not cropped images
             cv::Mat img_non_cropped_L, img_non_cropped_R;
             rectify_image(left_image_, map1_L, map2_L, common_roi, img_non_cropped_L);
             rectify_image(right_image_, map1_R, map2_R, common_roi, img_non_cropped_R);
@@ -120,7 +121,7 @@ private:
                 cv::line(right_image_, cv::Point(0, y), cv::Point(right_image_.cols - 1, y), cv::Scalar(0, 0, 255), 1);
             }
 
-            // Display the synchronized images
+            // Display the Rectified images
             // cv::imshow("Left Rectified (non cropped)", img_non_cropped_L);
             // cv::imshow("Right Rectified (non cropped)", img_non_cropped_R);
 
@@ -135,6 +136,8 @@ private:
 
             int key = cv::waitKey(1);
 #else
+            // Save PNG images
+
             // Show images (resized)
             cv::Mat concatenated;
             cv::Mat resizedImage1, resizedImage2;
@@ -153,6 +156,7 @@ private:
                 cv::imwrite(path +"/right/"+std::to_string(cont_salva_immagini)+".jpg", right_image_);
                 cont_salva_immagini ++;
                 
+                // Clear matrixes so they won't be re-processed
                 left_image_.release();
                 right_image_.release();
 
@@ -169,7 +173,7 @@ private:
     
     }
 
-    // Rectification params
+    // Rectification output params
     cv::Mat map1_L, map2_L, map1_R,  map2_R;
     cv::Rect roi_L, roi_R, common_roi;
 
