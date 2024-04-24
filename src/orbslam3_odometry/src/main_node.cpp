@@ -33,6 +33,7 @@ public:
         this->declare_parameter("path_yaml_settings", "");
         this->declare_parameter("system_mode", "");
         this->declare_parameter("just_check_stereo_calibration", false);
+        this->declare_parameter("just_take_picture", false);
 
         /* ******************************** */
 
@@ -43,13 +44,14 @@ public:
         this->get_parameter("path_yaml_settings", path_settings);
         this->get_parameter("system_mode", system_mode);
         this->get_parameter("just_check_stereo_calibration", just_check_stereo_calibration);
+        this->get_parameter("just_take_picture", just_take_picture);
 
         std::cout << "Sono nella classe " << std::endl;
 
         if (DEBUG)
             printDebug();
         
-        if (just_check_stereo_calibration){
+        if (just_check_stereo_calibration || just_take_picture){
             RCLCPP_INFO(this->get_logger(), "CHECKING STEREO RECTIFICATION");
 
             auto node = std::make_shared<JustCheckStereoCalibration>(path_settings);
@@ -75,7 +77,7 @@ public:
     }
 
 private:
-    bool pangolin_visualization, just_check_stereo_calibration;
+    bool pangolin_visualization, just_check_stereo_calibration, just_take_picture;
     std::string path_vocabulary, path_settings, system_mode;
 
     void printDebug()

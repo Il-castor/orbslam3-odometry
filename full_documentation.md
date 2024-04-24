@@ -32,9 +32,10 @@ In summary, these two topics are essential for correctly visualizing the robotâ€
 - **Path YAML Settings**: This parameter (<i>path_yaml_settings</i>) specifies the full file path to the YAML settings for ORB_SLAM3. This file's content will be described below. Remember to provide the <b>full path</b> to the yaml file.
 
 ## Monocular or stereo?
-The <i>system_mode</i> parameter specifies the mode of operation for ORB-SLAM3. The possible modes are `mono` or `stereo` <!--, and `stereo_imu` -->. After a ~~bit~~ lot of testing, we found that: 
+The <i>system_mode</i> parameter specifies the mode of operation for ORB-SLAM3. The possible modes are `mono` or `stereo` <!--, and `stereo_imu` -->. After a lot of testing, we found that: 
 
-- Stereo version works really good with stereo cameras (Zed2). The position and orientation is extremely good, compared to FastLio, considering also the costs of the components used by ORB-SLAM3 (relatively cheap) and FasLio's (expensive). We really tried to make stereo works with Baslers too, but without good results. Unfortunately in the curves ORB-SLAM3 seems to loose the references. We let this as a parameter, in case the car's cameras will be substituted with stereo.
+- Stereo version works really good with stereo cameras (Zed2). The position and orientation is extremely good, compared to FastLio, considering also the costs of the components used by ORB-SLAM3 (relatively cheap) and FasLio's (expensive).
+With Basler, stereo version works good. We tried turning the cameras in different positions and found that the best position is the following: cameras pointing outwards with an angle of 120Â° between them.
 - Monocular version is the one we found better results (for Basler). It maps and relocalizes quite good. BUT bad news is monocular has no depth information, so the created map is not in scale with reality. We fixed this by multipling by a "scale factor" the returned position. 
 
 

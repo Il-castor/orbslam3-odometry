@@ -45,3 +45,7 @@
 
     # For stereo mode only. Doesn't make ORB_SLAM3 start. It just shows the results of the stereo calibration with the params in the path_yaml_settings
     just_check_stereo_calibration: false
+
+    # true: take photo for calibration (press spacebar for take photo)
+    # false disable this functionality
+    just_take_picture: false
