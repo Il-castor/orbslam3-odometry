@@ -18,6 +18,8 @@ Although ORB-SLAM3 provides a way to use also IMU data for the mapping/localizat
 The node publishes odometry data on the following topic:
 - **ORBSLAM Odometry**: The topic `/Odometry/orbSlamOdom` publishes the odometry data calculated by ORBSLAM3 (<i>topic_orbslam_odometry</i>).
 
+
+
 Also these headers values can be changed in the yaml file: 
 -	Header Frame ID (`os_track`): This is the frame of reference for the published odometry data (<i>topic_header_frame_id</i>). To visualize both FastLio's and ORB-SLAM3's odometries in Rviz2, change this value to <i>fl_track</i>.
 <!-- In RViz2, this frame is used as the reference coordinate system for visualizing the robot’s movement. All the odometry data is transformed into this frame before being displayed. -->
@@ -50,6 +52,8 @@ For the monocular version of ORBSLAM3, the following parameters are used:
 - **Degree Move Pose Mono**: This parameter (<i>degree_move_pose_mono</i>) specifies the degree to move the calculated orientation. We change the orientation to align it with FastLio (otherwise we would have oblique trajectory when the car is actually going straight).
     - If it is 0, the pose will not be changed. This should be used in  case camera is in the same direction as the forward axes.
     - If the cameras' support is the same as the one used for the test and cameras are turned with the same angles, we found that a value of `16` works good.  (TBD with new support)
+
+Monocular takes images directly from the driver camera.
 
 ## How to get settings file content
 Now, we will describe the content of the setting file that must be provided to ORB-SLAM. The full documentation of the file content can be found directly [here](https://github.com/UZ-SLAMLab/ORB_SLAM3/blob/master/Calibration_Tutorial.pdf). 
@@ -105,7 +109,7 @@ To obtain stereo's rectification parameters, we created a few scripts. The steps
     TODO: da fare in modo meno macchinoso, senza la SHOW_reCTIFIED
 
     First thing to do is getting the pictures to calibrate cameras. The images can be obtained like this: 
-    - In the  [yaml file](src/orbslam3_odometry/config/orbslam3_odometry.yaml), set to `true` the <i>just_check_stereo_calibration</i> parameter. 
+    - In the  [yaml file](src/orbslam3_odometry/config/orbslam3_odometry.yaml), set to `true` the <i>just_take_picture</i> parameter 
     - In the [just_check_stereo_calibration.cpp](src/orbslam3_odometry/src/stereo/just_check_stereo_calibration.cpp) at line 150, change the path variable with the folder where calibration images will be saved. <b>Remember </b> to create this folder and two sub-directories (called <i>left</i> and <i>right</i>) before running the node.
     - Make sure `SHOW_RECTIFICATION` macro is NOT defined. (If it is, remove it and re-build the node). Tip: `roscd orbslam3_odometry && grep "SHOW_RECTIFICATION" -rn src/`
     - Run the node. Left and right images will be shown. When you are ready to take the picture, press the spacebar. The focus must be on the shown pictures, NOT on the terminal, so press with the mouse on the window with the shown pictures before taking the images.
@@ -142,4 +146,13 @@ To obtain stereo's rectification parameters, we created a few scripts. The steps
 
 4. Run ORB-SLAM3
     You are now ready to run ORB-SLAM3! But don't forget to set to `false` the <i>just_check_stereo_calibration</i> parameter in the  [yaml file](src/orbslam3_odometry/config/orbslam3_odometry.yaml), 
+
+## How we calculated the Odometry
+### Monocular
+The TrackMonocular function returns the position of the camera in the form of a quaternion. We take the quaternion and rotate it to have NED as the coordinate system since ORBSLAM uses EDN as the coordinate system. We also multiply the quaternions by a scaling factor (described above) because since we only have one camera, we do not have the actual scaling factor and therefore each run is calculated differently based on the median depth of the scene.
+
+It is often necessary to apply a cut to input images because many times they focus on the wrong points. By cutting the image ORBSLAM3 focuses on cones 
+
+## Stereo 
+Very similar to Monocular, but we use trackStereo. We do not multiply quaternions because in this case we have a real scale factor. 
 
