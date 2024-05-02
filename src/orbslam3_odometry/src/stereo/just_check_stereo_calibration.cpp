@@ -133,12 +133,10 @@ private:
                 // Clear matrixes so they won't be re-processed
                 left_image_.release();
                 right_image_.release();
-
-                int key = cv::waitKey(1);
             }
             else
             {
-                // Save PNG images
+                // Save images
 
                 // Show images (resized)
                 cv::Mat concatenated;

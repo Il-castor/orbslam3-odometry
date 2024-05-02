@@ -25,7 +25,8 @@ public:
     ~MonocularSlamNode();
 
 private:
-    using ImageMsg = sensor_msgs::msg::CompressedImage;
+    using ImageMsg = sensor_msgs::msg::CompressedImage; // Se cambiato, cambia anche le due callbacks
+    //using ImageMsg = sensor_msgs::msg::Image;     
 
     void GrabImage(const ImageMsg::SharedPtr msg);
 

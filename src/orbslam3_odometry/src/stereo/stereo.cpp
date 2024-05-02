@@ -15,7 +15,6 @@ void StereoSlamNode::loadParameters()
 
     declare_parameter("topic_camera_left", "/camera/left_image");
     declare_parameter("topic_camera_right", "/camera/right_image");
-    declare_parameter("topic_imu", "/imu/data");
     declare_parameter("topic_orbslam_odometry", "/Odometry/orbSlamOdom");
     declare_parameter("topic_header_frame_id", "os_track");
     declare_parameter("topic_child_frame_id", "orbslam3");
@@ -24,14 +23,12 @@ void StereoSlamNode::loadParameters()
     declare_parameter("cutting_width", 0);
     declare_parameter("cutting_height", 0);
 
-
     /* ******************************** */
 
     /* ***** READING PARAMETERS ***** */
 
     get_parameter("topic_camera_left", this->camera_left);
     get_parameter("topic_camera_right", this->camera_right);
-    get_parameter("topic_imu", this->imu);
     get_parameter("topic_orbslam_odometry", this->topic_pub_quat);
     get_parameter("topic_header_frame_id", this->header_id_frame);
     get_parameter("topic_child_frame_id", this->child_id_frame);
@@ -39,7 +36,6 @@ void StereoSlamNode::loadParameters()
     get_parameter("cutting_y", this->cutting_y);
     get_parameter("cutting_width", this->cutting_width);
     get_parameter("cutting_height", this->cutting_height);
-
 }
 
 StereoSlamNode::StereoSlamNode(ORB_SLAM3::System *pSLAM, const string &strSettingsFile)
@@ -50,7 +46,7 @@ StereoSlamNode::StereoSlamNode(ORB_SLAM3::System *pSLAM, const string &strSettin
     this->loadParameters();
 
     // Read stereo-rectification parameters
-    readParameters(strSettingsFile, map1_L, map2_L, roi_L, map1_R, map2_R, roi_R) ;
+    readParameters(strSettingsFile, map1_L, map2_L, roi_L, map1_R, map2_R, roi_R);
     common_roi = roi_L & roi_R;
 
     // Compute cutting rect
@@ -105,10 +101,10 @@ void StereoSlamNode::leftCallback(const ImageMsg::SharedPtr msg)
     try
     {
 
-        RCLCPP_INFO(this->get_logger(), "left" );
+        RCLCPP_INFO(this->get_logger(), "left");
 
         // left_image_ = cv_bridge::toCvShare(msg, "bgr8")->image;  // For image
-        left_image_ = cv_bridge::toCvCopy(msg, "bgr8")->image;      // For compressed images
+        left_image_ = cv_bridge::toCvCopy(msg, "bgr8")->image; // For compressed images
 
         timestamp = Utility::StampToSec(msg->header.stamp);
 
@@ -131,10 +127,10 @@ void StereoSlamNode::rightCallback(const ImageMsg::SharedPtr msg)
     bufMutexRight_.lock();
     try
     {
-        RCLCPP_INFO(this->get_logger(), "right" );
+        RCLCPP_INFO(this->get_logger(), "right");
 
         // right_image_ = cv_bridge::toCvShare(msg, "bgr8")->image; // For image
-        right_image_ = cv_bridge::toCvCopy(msg, "bgr8")->image;     // For compressed images
+        right_image_ = cv_bridge::toCvCopy(msg, "bgr8")->image; // For compressed images
 
         // cv::imshow("Right NON Rectified", right_image_);
 
@@ -160,8 +156,6 @@ static std::string quaternionToString(const Eigen::Quaternionf &q)
 
 void StereoSlamNode::SyncImg()
 {
-    const double maxTimeDiff = 0.01;    // TODO check big time difference
-
     while (1)
     {
         cv::Mat imLeft, imRight;
@@ -170,11 +164,10 @@ void StereoSlamNode::SyncImg()
         {
             // Compute ORB-SLAM3 on the 2 grabbed images
             StereoSlamNode::GrabStereo(left_image_, right_image_);
-            
+
             // Remove the images, so they won't be re-computated
             left_image_.release();
             right_image_.release();
-
         }
 
         std::chrono::milliseconds tSleep(1);
@@ -197,20 +190,21 @@ void StereoSlamNode::GrabStereo(cv::Mat image_L, cv::Mat image_R)
 #endif
 
     // If necessary, perform changes to the images here.
-    if (cutting_x != -1){
+    if (cutting_x != -1)
+    {
         Utility::cutting_image(left_rectified_non_cropped, cutting_rect);
         Utility::cutting_image(right_rectified_non_cropped, cutting_rect);
     }
 
     // Call ORB-SLAM3 on the 2 rectified images
     Sophus::SE3f Tcw = m_SLAM->TrackStereo(left_rectified_non_cropped, right_rectified_non_cropped, timestamp);
-    
+
     // Obtain the position and the quaternion
     Sophus::SE3f Twc = Tcw.inverse();
     Eigen::Vector3f twc = Twc.translation();
     Eigen::Quaternionf q = Twc.unit_quaternion();
 
-    // String containing the quaternion 
+    // String containing the quaternion
     std::string messaggio_quaternion = quaternionToString(q);
 
     // I publish position and quaternion (rotated)
