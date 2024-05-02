@@ -52,7 +52,7 @@ public:
             printDebug();
         
         if (just_check_stereo_calibration || just_take_picture){
-            RCLCPP_INFO(this->get_logger(), "CHECKING STEREO RECTIFICATION");
+            RCLCPP_INFO(this->get_logger(), "CHECKING STEREO RECTIFICATION OR TAKING PICTURE. ORB-SLAM WILL NOT START");
 
             auto node = std::make_shared<JustCheckStereoCalibration>(path_settings);
             rclcpp::spin(node);
@@ -70,7 +70,7 @@ public:
         else if (system_mode == "stereo")
         {
             ORB_SLAM3::System pSLAM(path_vocabulary, path_settings, ORB_SLAM3::System::STEREO, pangolin_visualization);
-            auto node = std::make_shared<StereoSlamNode>(&pSLAM, path_settings, std::to_string(pangolin_visualization));
+            auto node = std::make_shared<StereoSlamNode>(&pSLAM, path_settings);
             rclcpp::spin(node);
             return;
         }

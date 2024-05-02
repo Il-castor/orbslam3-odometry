@@ -17,6 +17,10 @@ void MonocularSlamNode::loadParameters()
     declare_parameter("is_camera_left", true);
     declare_parameter("scale_position_mono", 1);
     declare_parameter("degree_move_pose_mono", 0);
+    declare_parameter("cutting_x", -1);
+    declare_parameter("cutting_y", 0);
+    declare_parameter("cutting_width", 0);
+    declare_parameter("cutting_height", 0);
 
     /* ******************************** */
 
@@ -31,6 +35,10 @@ void MonocularSlamNode::loadParameters()
     get_parameter("is_camera_left", this->isCameraLeft);
     get_parameter("scale_position_mono", this->scale_position_mono);
     get_parameter("degree_move_pose_mono", this->degree_move_pose_mono);
+    get_parameter("cutting_x", this->cutting_x);
+    get_parameter("cutting_y", this->cutting_y);
+    get_parameter("cutting_width", this->cutting_width);
+    get_parameter("cutting_height", this->cutting_height);
 
 }
 
@@ -38,6 +46,10 @@ MonocularSlamNode::MonocularSlamNode(ORB_SLAM3::System *pSLAM)
     : Node("orbslam3_odometry")
 {
     this->loadParameters();
+
+    // Compute cutting rect
+    if (cutting_x != -1)
+        cutting_rect = cv::Rect(cutting_x, cutting_y, cutting_width, cutting_height);
 
     rclcpp::QoS qos(rclcpp::KeepLast(10));
     qos.best_effort();
@@ -95,6 +107,8 @@ static std::string quaternionToString(const Eigen::Quaternionf &q)
 void MonocularSlamNode::GrabImage(const ImageMsg::SharedPtr msg)
 {
     RCLCPP_INFO(this->get_logger(), "Sono nella callback");
+    
+    // Inizial time
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
     // Copy the ros image message to cv::Mat.
@@ -110,11 +124,17 @@ void MonocularSlamNode::GrabImage(const ImageMsg::SharedPtr msg)
         RCLCPP_ERROR(this->get_logger(), "cv_bridge exception: %s", e.what());
         return;
     }
-
-    Sophus::SE3f Tcw;
     std::cout << "one frame has been sent" << std::endl;
-    m_SLAM->TrackMonocular(m_cvImPtr->image, Utility::StampToSec(msg->header.stamp));
 
+    // Perform changes to image here
+    cv::Mat image_for_orbslam = m_cvImPtr->image;
+    if (cutting_x != -1)
+        Utility::cutting_image(image_for_orbslam, cutting_rect);
+        
+    // Call ORB-SLAM3 with provided image
+    Sophus::SE3f Tcw = m_SLAM->TrackMonocular(image_for_orbslam, Utility::StampToSec(msg->header.stamp));
+
+    // Obtain the position and the orientation
     Sophus::SE3f Twc = Tcw.inverse();
     Eigen::Vector3f twc = Twc.translation();
     Eigen::Quaternionf q = Twc.unit_quaternion();
@@ -122,14 +142,12 @@ void MonocularSlamNode::GrabImage(const ImageMsg::SharedPtr msg)
     // String containing the quaternion
     std::string messaggio_quaternion = quaternionToString(q);
 
-    // "filename" (in ASL format)
-    //double timestamp = Utility::StampToSec(msg->header.stamp);
-
-    // I publish timestamp and quaternion
+    // I publish position and quaternion (rotated)
     auto message = nav_msgs::msg::Odometry();
     geometry_msgs::msg::Pose output_pose{};
 
-    output_pose.position.x = twc.z() * this->scale_position_mono;
+    // Multipling is necessary in the monocular, since there is no depth info
+    output_pose.position.x = twc.z() * this->scale_position_mono;   
     output_pose.position.y = -twc.x() * this->scale_position_mono;
     output_pose.position.z = 0;
 
@@ -139,14 +157,19 @@ void MonocularSlamNode::GrabImage(const ImageMsg::SharedPtr msg)
     output_pose.orientation.w = q.w();
 
     if (this->degree_move_pose_mono != 0){
-        // Move orientation of specified degree
+        // If required, I move the yaw of specified degrees
         tf2::Quaternion tf2_quat;
         tf2::fromMsg(output_pose.orientation, tf2_quat);
 
         double roll, pitch, yaw;
         tf2::Matrix3x3 m(tf2_quat);
         m.getRPY(roll, pitch, yaw);
-        tf2_quat.setRPY(0, 0, yaw-(this->degree_move_pose_mono * (M_PI / 180.0))); 
+        
+        // The provided degree must become negative if the tracked camera is the left
+        if (isCameraLeft)  
+            this->degree_move_pose_mono *= -1;
+        
+        tf2_quat.setRPY(0, 0, yaw+(this->degree_move_pose_mono * (M_PI / 180.0))); 
         output_pose.orientation = tf2::toMsg(tf2_quat);
     }
 

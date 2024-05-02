@@ -94,15 +94,14 @@ private:
 
     void SyncImages()
     {
-        // RCLCPP_INFO(this->get_logger(), "sono nel thread" );
+        // Main thread
 
         if (!left_image_.empty() && !right_image_.empty())
         {
-            // SHOW_RECTIFICATION for showing image rectification. if not defined it will save PNG images
 
             if (!isTakingPicture)
             {
-
+                // isTakingPicture is false, so i will show rectification results and disparity map
                 RCLCPP_INFO(this->get_logger(), "rectification...");
 
                 // Perform stereo rectification. I save also the rectified but not cropped images

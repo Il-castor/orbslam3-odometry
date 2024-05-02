@@ -45,6 +45,10 @@ private:
     int scale_position_mono;
     int degree_move_pose_mono;
 
+    // Cutting parameters
+    int cutting_x, cutting_y, cutting_width, cutting_height;
+    cv::Rect cutting_rect;
+
 };
 
 #endif

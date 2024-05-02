@@ -11,6 +11,10 @@ public:
     double seconds = stamp.sec + (stamp.nanosec * pow(10,-9));
     return seconds;
   }
+
+  static void cutting_image(cv::Mat &image, cv::Rect roiRect){
+    image = image(roiRect);
+  }
 };
 
 #endif

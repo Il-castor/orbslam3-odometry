@@ -3,7 +3,8 @@
 #include <opencv2/core/core.hpp>
 #include <chrono>
 
-#define DEBUG true
+// If defined the node will print debug information and will show disparity map
+// #define DEBUG
 
 using std::placeholders::_1;
 using std::placeholders::_2;
@@ -18,6 +19,11 @@ void StereoSlamNode::loadParameters()
     declare_parameter("topic_orbslam_odometry", "/Odometry/orbSlamOdom");
     declare_parameter("topic_header_frame_id", "os_track");
     declare_parameter("topic_child_frame_id", "orbslam3");
+    declare_parameter("cutting_x", -1);
+    declare_parameter("cutting_y", 0);
+    declare_parameter("cutting_width", 0);
+    declare_parameter("cutting_height", 0);
+
 
     /* ******************************** */
 
@@ -29,21 +35,27 @@ void StereoSlamNode::loadParameters()
     get_parameter("topic_orbslam_odometry", this->topic_pub_quat);
     get_parameter("topic_header_frame_id", this->header_id_frame);
     get_parameter("topic_child_frame_id", this->child_id_frame);
+    get_parameter("cutting_x", this->cutting_x);
+    get_parameter("cutting_y", this->cutting_y);
+    get_parameter("cutting_width", this->cutting_width);
+    get_parameter("cutting_height", this->cutting_height);
+
 }
 
-StereoSlamNode::StereoSlamNode(ORB_SLAM3::System *pSLAM, const string &strSettingsFile, const string &strDoRectify)
+StereoSlamNode::StereoSlamNode(ORB_SLAM3::System *pSLAM, const string &strSettingsFile)
     : Node("orbslam3_odometry"),
       m_SLAM(pSLAM)
 {
+    // Load parameters
     this->loadParameters();
 
+    // Read stereo-rectification parameters
     readParameters(strSettingsFile, map1_L, map2_L, roi_L, map1_R, map2_R, roi_R) ;
     common_roi = roi_L & roi_R;
 
-    stringstream ss(strDoRectify);
-    ss >> boolalpha >> doRectify;
-
-    std::cout << "strDoRectify " << boolalpha << " " << doRectify << std::endl;
+    // Compute cutting rect
+    if (cutting_x != -1)
+        cutting_rect = cv::Rect(cutting_x, cutting_y, cutting_width, cutting_height);
 
 #ifdef DEBUG
     RCLCPP_INFO(this->get_logger(), "Topic camera left: %s", this->camera_left.c_str());
@@ -54,46 +66,7 @@ StereoSlamNode::StereoSlamNode(ORB_SLAM3::System *pSLAM, const string &strSettin
     RCLCPP_INFO(this->get_logger(), "topic_orbslam_odometry: %s", this->topic_pub_quat.c_str());
 #endif
 
-    // std::cout << "dorectify: "  << strDoRectify << "\tBoolean:" << doRectify <<endl;
-
-    if (doRectify) // TODO questo io lo caverei e metterei il nostro codice
-    {
-        cv::FileStorage fsSettings(strSettingsFile, cv::FileStorage::READ);
-        if (!fsSettings.isOpened())
-        {
-            cerr << "ERROR: Wrong path to settings" << endl;
-            assert(0);
-        }
-
-        cv::Mat K_l, K_r, P_l, P_r, R_l, R_r, D_l, D_r;
-        fsSettings["LEFT.K"] >> K_l;
-        fsSettings["RIGHT.K"] >> K_r;
-
-        fsSettings["LEFT.P"] >> P_l;
-        fsSettings["RIGHT.P"] >> P_r;
-
-        fsSettings["LEFT.R"] >> R_l;
-        fsSettings["RIGHT.R"] >> R_r;
-
-        fsSettings["LEFT.D"] >> D_l;
-        fsSettings["RIGHT.D"] >> D_r;
-
-        int rows_l = fsSettings["LEFT.height"];
-        int cols_l = fsSettings["LEFT.width"];
-        int rows_r = fsSettings["RIGHT.height"];
-        int cols_r = fsSettings["RIGHT.width"];
-
-        if (K_l.empty() || K_r.empty() || P_l.empty() || P_r.empty() || R_l.empty() || R_r.empty() || D_l.empty() || D_r.empty() ||
-            rows_l == 0 || rows_r == 0 || cols_l == 0 || cols_r == 0)
-        {
-            // NB: Passa come ultimo argomento false, in modo da non entrare in questo ramo.
-            cerr << "ERROR: Calibration parameters to rectify stereo are missing!" << endl;
-            assert(0);
-        }
-
-        cv::initUndistortRectifyMap(K_l, D_l, R_l, P_l.rowRange(0, 3).colRange(0, 3), cv::Size(cols_l, rows_l), CV_32F, M1l, M2l);
-        cv::initUndistortRectifyMap(K_r, D_r, R_r, P_r.rowRange(0, 3).colRange(0, 3), cv::Size(cols_r, rows_r), CV_32F, M1r, M2r);
-    }
+    // Images subscriptions and odomotry pubblication
 
     rclcpp::QoS qos(rclcpp::KeepLast(10));
     qos.best_effort();
@@ -101,15 +74,11 @@ StereoSlamNode::StereoSlamNode(ORB_SLAM3::System *pSLAM, const string &strSettin
     subImgLeft_ = this->create_subscription<ImageMsg>(this->camera_left, qos, std::bind(&StereoSlamNode::leftCallback, this, _1));
     subImgRight_ = this->create_subscription<ImageMsg>(this->camera_right, qos, std::bind(&StereoSlamNode::rightCallback, this, _1));
 
-    // left_sub = std::make_shared<message_filters::Subscriber<ImageMsg>>(shared_ptr<rclcpp::Node>(this), this->camera_left);
-    // right_sub = std::make_shared<message_filters::Subscriber<ImageMsg>>(shared_ptr<rclcpp::Node>(this), this->camera_right);
     quaternion_pub = this->create_publisher<nav_msgs::msg::Odometry>(topic_pub_quat, 10);
-
-    // syncApproximate = std::make_shared<message_filters::Synchronizer<approximate_sync_policy>>(approximate_sync_policy(10), *left_sub, *right_sub);
-    // syncApproximate->registerCallback(&StereoSlamNode::GrabStereo, this);
 
     RCLCPP_INFO(this->get_logger(), "ORB-SLAM3 STARTED IN STEREO MODE. NODE WILL WAIT FOR IMAGES IN TOPICS %s and %s", this->camera_left.c_str(), this->camera_right.c_str());
 
+    // Starts orbslam3. This thread is used to syncronize the two images
     syncThread_ = new std::thread(&StereoSlamNode::SyncImg, this);
     // std::cout << "End Costructor" << endl;
 }
@@ -127,6 +96,9 @@ StereoSlamNode::~StereoSlamNode()
     RCLCPP_INFO(this->get_logger(), "Saved CameraTrajectory.txt ");
 }
 
+/**
+ *  Function that saves left image in variable left_image_
+ */
 void StereoSlamNode::leftCallback(const ImageMsg::SharedPtr msg)
 {
     bufMutexLeft_.lock();
@@ -151,6 +123,9 @@ void StereoSlamNode::leftCallback(const ImageMsg::SharedPtr msg)
     bufMutexLeft_.unlock();
 }
 
+/**
+ *  Function that saves right image in variable right_image_
+ */
 void StereoSlamNode::rightCallback(const ImageMsg::SharedPtr msg)
 {
     bufMutexRight_.lock();
@@ -193,9 +168,10 @@ void StereoSlamNode::SyncImg()
         double tImLeft = 0, tImRight = 0;
         if (!left_image_.empty() && !right_image_.empty())
         {
-            
-
+            // Compute ORB-SLAM3 on the 2 grabbed images
             StereoSlamNode::GrabStereo(left_image_, right_image_);
+            
+            // Remove the images, so they won't be re-computated
             left_image_.release();
             right_image_.release();
 
@@ -208,41 +184,36 @@ void StereoSlamNode::SyncImg()
 
 void StereoSlamNode::GrabStereo(cv::Mat image_L, cv::Mat image_R)
 {
-    // init time
+    // Initial time
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
-
-    // Quaternion
-    Sophus::SE3f Tcw;
-
-    rectify_image(image_L, map1_L, map2_L, common_roi);
-    rectify_image(image_R, map1_R, map2_R, common_roi);
+    // First of all we rectify images
+    cv::Mat left_rectified_non_cropped, right_rectified_non_cropped;
+    rectify_image(image_L, map1_L, map2_L, common_roi, left_rectified_non_cropped);
+    rectify_image(image_R, map1_R, map2_R, common_roi, right_rectified_non_cropped);
 
 #ifdef DEBUG
     show_disparity(image_L, image_R);
 #endif
 
-    if (doRectify)
-    {
-        cv::remap(image_L, image_L, M1l, M2l, cv::INTER_LINEAR);
-        cv::remap(image_R, image_R, M1r, M2r, cv::INTER_LINEAR);
-        Tcw = m_SLAM->TrackStereo(image_L, image_R, timestamp);
+    // If necessary, perform changes to the images here.
+    if (cutting_x != -1){
+        Utility::cutting_image(left_rectified_non_cropped, cutting_rect);
+        Utility::cutting_image(right_rectified_non_cropped, cutting_rect);
     }
-    else
-    {
-        Tcw = m_SLAM->TrackStereo(image_L, image_R, timestamp);
-    }
+
+    // Call ORB-SLAM3 on the 2 rectified images
+    Sophus::SE3f Tcw = m_SLAM->TrackStereo(left_rectified_non_cropped, right_rectified_non_cropped, timestamp);
+    
+    // Obtain the position and the quaternion
     Sophus::SE3f Twc = Tcw.inverse();
     Eigen::Vector3f twc = Twc.translation();
     Eigen::Quaternionf q = Twc.unit_quaternion();
 
-    // String containing the quaternion
+    // String containing the quaternion 
     std::string messaggio_quaternion = quaternionToString(q);
 
-    // "filename" (in ASL format)
-    // double timestamp = Utility::StampToSec(msgLeft->header.stamp);
-
-    // I publish position and quaternion
+    // I publish position and quaternion (rotated)
     auto message = nav_msgs::msg::Odometry();
     geometry_msgs::msg::Pose output_pose{};
 

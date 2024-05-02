@@ -25,15 +25,15 @@
 class StereoSlamNode : public rclcpp::Node
 {
 public:
-    StereoSlamNode(ORB_SLAM3::System* pSLAM, const string &strSettingsFile, const string &strDoRectify);
+    StereoSlamNode(ORB_SLAM3::System* pSLAM, const string &strSettingsFile);
 
     ~StereoSlamNode();
 
 private:
     using ImageMsg = sensor_msgs::msg::CompressedImage;     // Se cambiato, cambia anche le due callbacks
-    // typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::Image, sensor_msgs::msg::Image> approximate_sync_policy;
-
-    // void GrabStereo(const sensor_msgs::msg::Image::SharedPtr msgRGB, const sensor_msgs::msg::Image::SharedPtr msgD);
+    //using ImageMsg = sensor_msgs::msg::Image;     
+    
+    void loadParameters();
     void GrabStereo(cv::Mat image_L, cv::Mat image_R);
     void SyncImg();
     void leftCallback(const ImageMsg::SharedPtr msg);
@@ -41,37 +41,29 @@ private:
 
     ORB_SLAM3::System* m_SLAM;
 
-    bool doRectify;
-    cv::Mat M1l,M2l,M1r,M2r;
-
-    cv_bridge::CvImageConstPtr cv_ptrLeft;
-    cv_bridge::CvImageConstPtr cv_ptrRight;
-
+    // Images stuff
     rclcpp::Subscription<ImageMsg>::SharedPtr subImgLeft_;
     rclcpp::Subscription<ImageMsg>::SharedPtr subImgRight_;
-    std::thread *syncThread_;
-    
-    // Image
-    queue<ImageMsg::SharedPtr> imgLeftBuf_, imgRightBuf_;
     std::mutex bufMutexLeft_, bufMutexRight_;
-
     cv::Mat  left_image_, right_image_;
     double timestamp;
 
+    std::thread *syncThread_;
+
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr quaternion_pub;
 
-    // std::shared_ptr<message_filters::Synchronizer<approximate_sync_policy> > syncApproximate;
     
-
-    void loadParameters();
-    /*List of all parameters */
+    // List of all parameters 
     std::string camera_left, camera_right, imu, header_id_frame, child_id_frame; 
     std::string topic_pub_quat; 
+
+    // Cutting parameters
+    int cutting_x, cutting_y, cutting_width, cutting_height;
+    cv::Rect cutting_rect;
 
     // Rectification params
     cv::Mat map1_L, map2_L, map1_R,  map2_R;
     cv::Rect roi_L, roi_R, common_roi;
-
 
 };
 #endif
