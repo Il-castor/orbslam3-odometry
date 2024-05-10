@@ -35,9 +35,9 @@
     #   new_image = old_image(cutting_rect);
     # if cutting_x is -1, the images will not be cropped.
     cutting_x: 0
-    cutting_y: 400
+    cutting_y: 150
     cutting_width: 1280
-    cutting_height: 300
+    cutting_height: 400
 
     # Visualizer of map created by ORBSLAM3 and images passed with ROS2. 
     #   false to disable the visualizer
@@ -48,7 +48,7 @@
     path_vocabulary: src/orbslam3_odometry/config/ORBvoc.txt
 
     # Full file path to yaml settings (for ORB_SLAM3)
-    path_yaml_settings: src/orbslam3_odometry/config/basler_stereo_17_02_24.yaml
+    path_yaml_settings: src/orbslam3_odometry/config/basler_stereo_17_04_24.yaml
 
     # For stereo mode only. Doesn't make ORB_SLAM3 start (if true). It just shows the results of the stereo calibration with the params in the path_yaml_settings
     just_check_stereo_calibration: false

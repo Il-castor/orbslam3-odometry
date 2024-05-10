@@ -1,0 +1,67 @@
+%YAML:1.0
+
+#--------------------------------------------------------------------------------------------
+# Camera Parameters
+#--------------------------------------------------------------------------------------------
+File.version: "1.0"
+Camera.type: "Rectified" 
+
+# Zed2 provides already rectified images, so there is no need to pre-rectify them
+# So the only necessary parameters are here, and can be obtained using zed serial number
+
+Camera1.fx: 265.2846374511719
+Camera1.fy: 265.2846374511719
+Camera1.cx: 329.34228515625
+Camera1.cy: 179.8889923095703
+
+# Distance in meters of the two cameras
+Stereo.b: 0.12
+
+# Camera resolution
+Camera.width: 640
+Camera.height: 360
+
+# Camera frames per second 
+Camera.fps: 14
+
+# Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
+Camera.RGB: 1
+
+# Close/Far threshold. Baseline times.
+Stereo.ThDepth: 3.0
+
+#--------------------------------------------------------------------------------------------
+# ORB Parameters
+#--------------------------------------------------------------------------------------------
+# ORB Extractor: Number of features per image
+ORBextractor.nFeatures: 1250
+
+#--------------------------------------------------------------------------------------------
+# The changing of the following parameters should not infect the resul too much
+#--------------------------------------------------------------------------------------------
+# ORB Extractor: Scale factor between levels in the scale pyramid 	
+ORBextractor.scaleFactor: 1.2
+
+# ORB Extractor: Number of levels in the scale pyramid	
+ORBextractor.nLevels: 8
+
+# ORB Extractor: Fast threshold
+# Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
+# Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
+# You can lower these values if your images have low contrast			
+ORBextractor.iniThFAST: 20
+ORBextractor.minThFAST: 7
+
+#--------------------------------------------------------------------------------------------
+# Viewer Parameters
+#--------------------------------------------------------------------------------------------
+Viewer.KeyFrameSize: 0.05
+Viewer.KeyFrameLineWidth: 1.0
+Viewer.GraphLineWidth: 0.9
+Viewer.PointSize: 2.0
+Viewer.CameraSize: 0.08
+Viewer.CameraLineWidth: 3.0
+Viewer.ViewpointX: 0.0
+Viewer.ViewpointY: -0.7
+Viewer.ViewpointZ: -3.5
+Viewer.ViewpointF: 500.0

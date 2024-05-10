@@ -25,6 +25,10 @@ The node subscribes to the following topics and waits for data:
 
 In the stereo mode, the node will subscribe to both topics; while in monocular mode, the node will subscribe to only one of them, according to is_camera_left parameter (described below).
 
+The images are currently of type `sensor_msgs::msg::CompressedImage`. This can be changed to `sensor_msgs::msg::Image`, by performing this changes as indicated in the comments:
+- `ImageMsg` in [stereo.hpp](src/orbslam3_odometry/src/stereo/stereo.hpp) and  [monocular.hpp](src/orbslam3_odometry/src/stereo/stereo.hpp)
+- Images callbacks in [stereo.cpp](src/orbslam3_odometry/src/stereo/stereo.cpp) and [monocular.cpp](src/orbslam3_odometry/src/monocular/monocular.cpp) 
+
 Although ORB-SLAM3 provides a way to use also IMU data for the mapping/localization, we couldn't find a way to make it work properly. For this reason, this node won't subscribe to IMU. 
 
 <!-- **IMU**: The topic `/imu/data` provides the Inertial Measurement Unit (IMU) data (<i>topic_imu</i>).  -->
@@ -32,7 +36,7 @@ Although ORB-SLAM3 provides a way to use also IMU data for the mapping/localizat
 ## Publication Topics
 
 The node publishes odometry data on the following topic:
-- **ORBSLAM Odometry**: The topic `/Odometry/orbSlamOdom` publishes the odometry data calculated by ORBSLAM3 (<i>topic_orbslam_odometry</i>). We don't publish directly the result of ORBSLAM3 because we need to perform some changes before (described below).
+- **ORBSLAM Odometry**: The topic `/Odometry/orbSlamOdom` publishes the odometry data (`nav_msgs::msg::Odometry`) calculated by ORBSLAM3 (<i>topic_orbslam_odometry</i>). We don't publish directly the result of ORBSLAM3 because we need to perform some changes before (described below).
 
 
 
@@ -80,7 +84,7 @@ For the monocular version of ORBSLAM3, the following parameters are used:
 ## How to get settings file content
 Now, we will describe the content of the setting file that must be provided to ORB-SLAM. The full documentation of the file content can be found directly [here](https://github.com/UZ-SLAMLab/ORB_SLAM3/blob/master/Calibration_Tutorial.pdf). 
 
-Some examples of the settings file can be found in the [config directory](src/orbslam3_odometry/config/). 
+Some examples of the settings file can be found in the [config example directory](src/orbslam3_odometry/config/example_config/). 
 
 ### Common parameters
 Starting from one of the example settings file, these parameters must be changed:
@@ -122,7 +126,7 @@ Camera1.p2: 0.0
 
 
 ### Stereo 
-For the stereo version we provided some useful scripts to allow you to get the stereo parameters, used for rectification. (These are only required if Basler are used. If stereo camera are used, then the only required parameters are intrinsics value of one of the two cameras).  
+For the stereo version we provided some useful scripts to allow you to get the stereo parameters, used for rectification. These are only required if Basler are used. If stereo camera are used (such as Zed), then the only required parameters are intrinsics value of one of the two cameras. Also if you are using Zed, you must remove the definition of `PRE_RECTIFY_IMAGES` macro in [stereo.cpp](src/orbslam3_odometry/src/stereo/stereo.cpp), and skip all the rest.
 
 To obtain stereo's rectification parameters, we created a few scripts. The steps that must be done are the following:
 
@@ -190,7 +194,7 @@ We also multiply the position by a scaling factor (described above) because sinc
 
  
 ## Stereo 
-Very similar to Monocular, but we use `TrackStereo` and we sill need to convert to EDN coordinate system. 
+Very similar to Monocular, but we use `TrackStereo` and we sill need to convert to NED coordinate system. 
 
 In this case, we don't need to additionally rotate the yaw, probably because the overlap area of the two cameras (used by ORBSLAM in the computation) is in the same direction of the forward axis.
 

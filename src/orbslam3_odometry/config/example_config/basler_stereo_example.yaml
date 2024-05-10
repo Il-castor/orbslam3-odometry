@@ -1,0 +1,92 @@
+%YAML:1.0
+
+#--------------------------------------------------------------------------------------------
+# Camera Parameters. Adjust them!
+#--------------------------------------------------------------------------------------------
+File.version: "1.0"
+
+
+#--------------------------------------------------------------------------------------------
+# PARAMETERS RETURNED BY MATLAB CALIBRATION HERE
+# They will be used to pre-rectify images before giving them to orbslam
+Camera.type: "Rectified"
+
+Camera.width: 1280
+Camera.height: 720
+
+Camera1.fx: 918.343020865918
+Camera1.fy: 919.585309402472
+Camera1.cx: 634.541118761567
+Camera1.cy: 366.525157640710
+
+Camera1.k1: -0.329652152820
+Camera1.k2: 0.106160740638
+Camera1.p1: 0.000000000000
+Camera1.p2: 0.000000000000
+
+Camera2.fx: 917.467691202920
+Camera2.fy: 925.946259802574
+Camera2.cx: 655.137525775713
+Camera2.cy: 366.248688614514
+
+Camera2.k1: -0.326466786167
+Camera2.k2: 0.101505675989
+Camera2.p1: 0.000000000000
+Camera2.p2: 0.000000000000
+
+Stereo.T_c1_c2: !!opencv-matrix
+  rows: 4
+  cols: 4
+  dt: f
+  data: [0.721973562004, 0.002524892641, -0.691916035863, -86.975295102583,
+         -0.024759774482, 0.999447164758, -0.022188249716, 0.266933636276,
+         0.691477497346, 0.033151014691, 0.721636945347, -30.585506503875,
+         0.000000000000, 0.000000000000, 0.000000000000, 1.000000000000]
+# END OF MATLAB PARAMETERS
+#--------------------------------------------------------------------------------------------
+
+# Distance in meters of the two cameras
+Stereo.b: 0.092
+
+# Camera frames per second 
+Camera.fps: 59
+
+# Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
+Camera.RGB: 0
+
+# Close/Far threshold. Baseline times.
+Stereo.ThDepth: 10.0
+
+# ORB Extractor: Number of features per image
+ORBextractor.nFeatures: 4000
+
+#--------------------------------------------------------------------------------------------
+# The changing of the following parameters should not infect the resul too much
+#--------------------------------------------------------------------------------------------
+
+# ORB Extractor: Scale factor between levels in the scale pyramid 	
+ORBextractor.scaleFactor: 1.2
+
+# ORB Extractor: Number of levels in the scale pyramid	
+ORBextractor.nLevels: 8
+
+# ORB Extractor: Fast threshold
+# Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
+# Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
+# You can lower these values if your images have low contrast			
+ORBextractor.iniThFAST: 8
+ORBextractor.minThFAST: 7
+
+#--------------------------------------------------------------------------------------------
+# Viewer Parameters
+#--------------------------------------------------------------------------------------------
+Viewer.KeyFrameSize: 0.05
+Viewer.KeyFrameLineWidth: 1.0
+Viewer.GraphLineWidth: 0.9
+Viewer.PointSize: 2.0
+Viewer.CameraSize: 0.08
+Viewer.CameraLineWidth: 3.0
+Viewer.ViewpointX: 0.0
+Viewer.ViewpointY: -0.7
+Viewer.ViewpointZ: -3.5
+Viewer.ViewpointF: 500.0

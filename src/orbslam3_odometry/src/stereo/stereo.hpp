@@ -31,7 +31,7 @@ public:
 
 private:
     using ImageMsg = sensor_msgs::msg::CompressedImage;     // Se cambiato, cambia anche le due callbacks
-    //using ImageMsg = sensor_msgs::msg::Image;     
+    // using ImageMsg = sensor_msgs::msg::Image;     
     
     void loadParameters();
     void GrabStereo(cv::Mat image_L, cv::Mat image_R);

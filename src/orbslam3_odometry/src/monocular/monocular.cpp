@@ -104,6 +104,9 @@ static std::string quaternionToString(const Eigen::Quaternionf &q)
     return ss.str();
 }
 
+/**
+ * Image callback
+*/
 void MonocularSlamNode::GrabImage(const ImageMsg::SharedPtr msg)
 {
     RCLCPP_INFO(this->get_logger(), "Sono nella callback");

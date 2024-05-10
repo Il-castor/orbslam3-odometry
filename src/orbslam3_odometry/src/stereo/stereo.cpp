@@ -6,6 +6,10 @@
 // If defined the node will print debug information and will show disparity map
 // #define DEBUG
 
+// If defined, it will pre-rectify images, before giving it in input to orbslam.
+// It should be enables for Basler and disabled for stereo-camera like Zed
+#define PRE_RECTIFY_IMAGES
+
 using std::placeholders::_1;
 using std::placeholders::_2;
 
@@ -23,6 +27,7 @@ void StereoSlamNode::loadParameters()
     declare_parameter("cutting_width", 0);
     declare_parameter("cutting_height", 0);
 
+
     /* ******************************** */
 
     /* ***** READING PARAMETERS ***** */
@@ -36,6 +41,7 @@ void StereoSlamNode::loadParameters()
     get_parameter("cutting_y", this->cutting_y);
     get_parameter("cutting_width", this->cutting_width);
     get_parameter("cutting_height", this->cutting_height);
+
 }
 
 StereoSlamNode::StereoSlamNode(ORB_SLAM3::System *pSLAM, const string &strSettingsFile)
@@ -46,8 +52,10 @@ StereoSlamNode::StereoSlamNode(ORB_SLAM3::System *pSLAM, const string &strSettin
     this->loadParameters();
 
     // Read stereo-rectification parameters
-    readParameters(strSettingsFile, map1_L, map2_L, roi_L, map1_R, map2_R, roi_R);
-    common_roi = roi_L & roi_R;
+    #ifdef PRE_RECTIFY_IMAGES
+        readParameters(strSettingsFile, map1_L, map2_L, roi_L, map1_R, map2_R, roi_R) ;
+        common_roi = roi_L & roi_R;
+    #endif
 
     // Compute cutting rect
     if (cutting_x != -1)
@@ -101,10 +109,10 @@ void StereoSlamNode::leftCallback(const ImageMsg::SharedPtr msg)
     try
     {
 
-        RCLCPP_INFO(this->get_logger(), "left");
+        RCLCPP_INFO(this->get_logger(), "left" );
 
         // left_image_ = cv_bridge::toCvShare(msg, "bgr8")->image;  // For image
-        left_image_ = cv_bridge::toCvCopy(msg, "bgr8")->image; // For compressed images
+        left_image_ = cv_bridge::toCvCopy(msg, "bgr8")->image;      // For compressed images
 
         timestamp = Utility::StampToSec(msg->header.stamp);
 
@@ -127,10 +135,10 @@ void StereoSlamNode::rightCallback(const ImageMsg::SharedPtr msg)
     bufMutexRight_.lock();
     try
     {
-        RCLCPP_INFO(this->get_logger(), "right");
+        RCLCPP_INFO(this->get_logger(), "right" );
 
         // right_image_ = cv_bridge::toCvShare(msg, "bgr8")->image; // For image
-        right_image_ = cv_bridge::toCvCopy(msg, "bgr8")->image; // For compressed images
+        right_image_ = cv_bridge::toCvCopy(msg, "bgr8")->image;     // For compressed images
 
         // cv::imshow("Right NON Rectified", right_image_);
 
@@ -164,10 +172,11 @@ void StereoSlamNode::SyncImg()
         {
             // Compute ORB-SLAM3 on the 2 grabbed images
             StereoSlamNode::GrabStereo(left_image_, right_image_);
-
+            
             // Remove the images, so they won't be re-computated
             left_image_.release();
             right_image_.release();
+
         }
 
         std::chrono::milliseconds tSleep(1);
@@ -180,7 +189,8 @@ void StereoSlamNode::GrabStereo(cv::Mat image_L, cv::Mat image_R)
     // Initial time
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
-    // First of all we rectify images
+#ifdef PRE_RECTIFY_IMAGES
+    // First of all we pre-rectify the images
     cv::Mat left_rectified_non_cropped, right_rectified_non_cropped;
     rectify_image(image_L, map1_L, map2_L, common_roi, left_rectified_non_cropped);
     rectify_image(image_R, map1_R, map2_R, common_roi, right_rectified_non_cropped);
@@ -190,21 +200,30 @@ void StereoSlamNode::GrabStereo(cv::Mat image_L, cv::Mat image_R)
 #endif
 
     // If necessary, perform changes to the images here.
-    if (cutting_x != -1)
-    {
+    if (cutting_x != -1){
         Utility::cutting_image(left_rectified_non_cropped, cutting_rect);
         Utility::cutting_image(right_rectified_non_cropped, cutting_rect);
     }
 
-    // Call ORB-SLAM3 on the 2 rectified images
+    // Call ORB-SLAM3 on the 2 pre-rectified images
     Sophus::SE3f Tcw = m_SLAM->TrackStereo(left_rectified_non_cropped, right_rectified_non_cropped, timestamp);
+#else
+    // If necessary, perform changes to the images here.
+    if (cutting_x != -1){
+        Utility::cutting_image(image_L, cutting_rect);
+        Utility::cutting_image(image_R, cutting_rect);
+    }
 
+    // Call ORB-SLAM3 on the 2 original images
+    Sophus::SE3f Tcw = m_SLAM->TrackStereo(image_L, image_R, timestamp);
+#endif
+     
     // Obtain the position and the quaternion
     Sophus::SE3f Twc = Tcw.inverse();
     Eigen::Vector3f twc = Twc.translation();
     Eigen::Quaternionf q = Twc.unit_quaternion();
 
-    // String containing the quaternion
+    // String containing the quaternion 
     std::string messaggio_quaternion = quaternionToString(q);
 
     // I publish position and quaternion (rotated)
