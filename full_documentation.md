@@ -194,7 +194,7 @@ We also multiply the position by a scaling factor (described above) because sinc
 
  
 ## Stereo 
-Very similar to Monocular, but we use `TrackStereo` and we sill need to convert to NED coordinate system. 
+Very similar to Monocular, but we use `TrackStereo` and we still need to convert to NED coordinate system. 
 
 In this case, we don't need to additionally rotate the yaw, probably because the overlap area of the two cameras (used by ORBSLAM in the computation) is in the same direction of the forward axis.
 
