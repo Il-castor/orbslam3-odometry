@@ -27,7 +27,10 @@ public:
         readParameters(strSettingsFile, map1_L, map2_L, roi_L, map1_R, map2_R, roi_R);
         common_roi = roi_L & roi_R;
 
-        RCLCPP_INFO(this->get_logger(), "CHECKING STEREO RECTIFICATION STARTED. IMAGES WILL BE READ FROM TOPICS %s and %s", this->camera_left_topic.c_str(), this->camera_right_topic.c_str());
+        if (isTakingPicture)
+            RCLCPP_INFO(this->get_logger(), "JUST TAKING PICTURE. IMAGES WILL BE READ FROM TOPICS %s and %s", this->camera_left_topic.c_str(), this->camera_right_topic.c_str());
+        else
+            RCLCPP_INFO(this->get_logger(), "CHECKING STEREO RECTIFICATION STARTED. IMAGES WILL BE READ FROM TOPICS %s and %s", this->camera_left_topic.c_str(), this->camera_right_topic.c_str());
 
         // cv::namedWindow("Synchronized Images", cv::WINDOW_NORMAL);
 
@@ -39,7 +42,8 @@ public:
     }
 
 private:
-    using ImageMsg = sensor_msgs::msg::CompressedImage; // + cambia le due callbacks delle immagini
+    //using ImageMsg = sensor_msgs::msg::CompressedImage; // + cambia le due callbacks delle immagini
+    using ImageMsg = sensor_msgs::msg::Image; // + cambia le due callbacks delle immagini
 
     void loadParameters()
     {
@@ -57,9 +61,9 @@ private:
     {
         try
         {
-            // RCLCPP_INFO(this->get_logger(), "left" );
+            RCLCPP_INFO(this->get_logger(), "left" );
 
-            // left_image_ = cv_bridge::toCvShare(msg, "bgr8")->image;  // For image
+            //left_image_ = cv_bridge::toCvShare(msg, "bgr8")->image;  // For image
             left_image_ = cv_bridge::toCvCopy(msg, "bgr8")->image; // For compressed images
 
             // cv::imshow("Left NON Rectified", left_image_);
@@ -76,9 +80,9 @@ private:
     {
         try
         {
-            // RCLCPP_INFO(this->get_logger(), "right" );
+            RCLCPP_INFO(this->get_logger(), "right" );
 
-            // right_image_ = cv_bridge::toCvShare(msg, "bgr8")->image;
+            //right_image_ = cv_bridge::toCvShare(msg, "bgr8")->image;
             right_image_ = cv_bridge::toCvCopy(msg, "bgr8")->image;
 
             // cv::imshow("Right NON Rectified", right_image_);
@@ -102,7 +106,7 @@ private:
             if (!isTakingPicture)
             {
                 // isTakingPicture is false, so i will show rectification results and disparity map
-                RCLCPP_INFO(this->get_logger(), "rectification...");
+                RCLCPP_INFO(this->get_logger(), "FACCIO RECTIFICATION...");
 
                 // Perform stereo rectification. I save also the rectified but not cropped images
                 cv::Mat img_non_cropped_L, img_non_cropped_R;
@@ -123,9 +127,10 @@ private:
                 }
 
                 // Display the Rectified images
-                // cv::imshow("Left Rectified (non cropped)", img_non_cropped_L);
-                // cv::imshow("Right Rectified (non cropped)", img_non_cropped_R);
-
+                cv::imshow("Left Rectified (non cropped)", img_non_cropped_L);
+                cv::imshow("Right Rectified (non cropped)", img_non_cropped_R);
+                cv::waitKey(0);
+ 
                 // Perform stereo matching
                 std::cout << "disparity map" << std::endl;
                 show_disparity(left_image_, right_image_);

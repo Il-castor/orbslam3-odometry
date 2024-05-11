@@ -34,7 +34,7 @@
     #   cutting_rect = cv::Rect(cutting_x, cutting_y, cutting_width, cutting_height);
     #   new_image = old_image(cutting_rect);
     # if cutting_x is -1, the images will not be cropped.
-    cutting_x: 0
+    cutting_x: -1
     cutting_y: 150
     cutting_width: 1280
     cutting_height: 400
@@ -48,7 +48,7 @@
     path_vocabulary: src/orbslam3_odometry/config/ORBvoc.txt
 
     # Full file path to yaml settings (for ORB_SLAM3)
-    path_yaml_settings: src/orbslam3_odometry/config/basler_stereo_17_04_24.yaml
+    path_yaml_settings: src/orbslam3_odometry/config/basler_stereo_11_05_24_test.yaml
 
     # For stereo mode only. Doesn't make ORB_SLAM3 start (if true). It just shows the results of the stereo calibration with the params in the path_yaml_settings
     just_check_stereo_calibration: false
