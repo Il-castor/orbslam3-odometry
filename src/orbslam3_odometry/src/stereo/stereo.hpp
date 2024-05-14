@@ -20,6 +20,7 @@
 #include "nav_msgs/msg/odometry.hpp"
 #include "sensor_msgs/msg/compressed_image.hpp"
 #include "stereo_rectification.h"
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 
 class StereoSlamNode : public rclcpp::Node

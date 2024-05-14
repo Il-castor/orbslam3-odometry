@@ -62,6 +62,10 @@ MonocularSlamNode::MonocularSlamNode(ORB_SLAM3::System *pSLAM)
             this->camera_left,
             qos,
             std::bind(&MonocularSlamNode::GrabImage, this, std::placeholders::_1));
+            
+        // The provided degree must become negative if the tracked camera is the left
+        this->degree_move_pose_mono *= -1;
+
         RCLCPP_INFO(this->get_logger(), "ORB-SLAM3 STARTED IN MONOCULAR MODE. NODE WILL WAIT FOR IMAGES IN TOPIC %s", this->camera_left.c_str());
     }
     else
@@ -167,10 +171,6 @@ void MonocularSlamNode::GrabImage(const ImageMsg::SharedPtr msg)
         double roll, pitch, yaw;
         tf2::Matrix3x3 m(tf2_quat);
         m.getRPY(roll, pitch, yaw);
-        
-        // The provided degree must become negative if the tracked camera is the left
-        if (isCameraLeft)  
-            this->degree_move_pose_mono *= -1;
         
         tf2_quat.setRPY(0, 0, yaw+(this->degree_move_pose_mono * (M_PI / 180.0))); 
         output_pose.orientation = tf2::toMsg(tf2_quat);

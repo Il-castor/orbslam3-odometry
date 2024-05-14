@@ -238,6 +238,17 @@ void StereoSlamNode::GrabStereo(cv::Mat image_L, cv::Mat image_R)
     output_pose.orientation.y = -q.x();
     output_pose.orientation.z = -q.y();
     output_pose.orientation.w = q.w();
+    
+    
+    // Set Roll and Pitch to Zero
+    tf2::Quaternion tf2_quat;
+    tf2::fromMsg(output_pose.orientation, tf2_quat);
+    double roll, pitch, yaw;
+    tf2::Matrix3x3 m(tf2_quat);
+    m.getRPY(roll, pitch, yaw);
+    tf2_quat.setRPY(0, 0, yaw); 
+    output_pose.orientation = tf2::toMsg(tf2_quat);
+    
 
     message.pose.pose = output_pose;
     message.header.frame_id = header_id_frame;

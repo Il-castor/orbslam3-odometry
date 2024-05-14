@@ -15,7 +15,7 @@
     #   stereo
     #   stereo_imu    # will be ignored
     # Monocular mode will subscribe to topic_camera_left if topic_is_camera_left is true 
-    system_mode: stereo 
+    system_mode: mono 
 
     
     # For monocular version only. It indicates whether to subscribe to camera left or right topic for images. 
@@ -23,21 +23,22 @@
     #   false   -> camera right
     is_camera_left: true
 
-    # For monocular version only, since it has no depth info. It indicates the scale to multiply the calculated position (usually between 10 and 20)
-    scale_position_mono: 15
+    # For monocular version only, since it has no depth info. It indicates the scale to multiply the calculated position (usually between 5 and 10)
+    # Da testare
+    scale_position_mono: 5
 
     # For monocular version only. Degree to move the calculated pose. If 0 pose will not be changed.
-    degree_move_pose_mono: 16
+    degree_move_pose_mono: 10
 
     # Cutting parameters (for both monocular and stereo). 
     # Set how you want to crop your images before giving them to ORB-SLAM. The crop is perfomed like this:
     #   cutting_rect = cv::Rect(cutting_x, cutting_y, cutting_width, cutting_height);
     #   new_image = old_image(cutting_rect);
     # if cutting_x is -1, the images will not be cropped.
-    cutting_x: -1
-    cutting_y: 150
-    cutting_width: 1280
-    cutting_height: 400
+    cutting_x: 0
+    cutting_y: 250
+    cutting_width: 1280 
+    cutting_height: 400 
 
     # Visualizer of map created by ORBSLAM3 and images passed with ROS2. 
     #   false to disable the visualizer
@@ -48,7 +49,8 @@
     path_vocabulary: src/orbslam3_odometry/config/ORBvoc.txt
 
     # Full file path to yaml settings (for ORB_SLAM3)
-    path_yaml_settings: src/orbslam3_odometry/config/basler_stereo_11_05_24_test.yaml
+    path_yaml_settings: /mnt/hgfs/cartella_condivisa/bag_11_05_24/parametri_orbslam_mono_left.yaml
+    
 
     # For stereo mode only. Doesn't make ORB_SLAM3 start (if true). It just shows the results of the stereo calibration with the params in the path_yaml_settings
     just_check_stereo_calibration: false
@@ -57,3 +59,5 @@
     # true: take photo for calibration (press spacebar to take photo). Doesn't make ORB_SLAM3 start. 
     # false: disable this functionality
     just_take_picture: false
+    
+    
