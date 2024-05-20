@@ -254,6 +254,9 @@ void StereoSlamNode::GrabStereo(cv::Mat image_L, cv::Mat image_R)
     message.header.frame_id = header_id_frame;
     message.child_frame_id = child_id_frame;
 
+    //add timestamp to message
+    message.header.stamp = this->now();
+    
     quaternion_pub->publish(message);
 
     // "End" time and saving times. File with times:

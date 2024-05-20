@@ -179,6 +179,9 @@ void MonocularSlamNode::GrabImage(const ImageMsg::SharedPtr msg)
     message.pose.pose = output_pose;
     message.header.frame_id = header_id_frame;
     message.child_frame_id = child_id_frame;
+    
+    // add timestamp to message
+    message.header.stamp = this->now();
 
     quaternion_pub->publish(message);
 
