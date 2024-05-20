@@ -53,6 +53,7 @@ StereoSlamNode::StereoSlamNode(ORB_SLAM3::System *pSLAM, const string &strSettin
 
     // Read stereo-rectification parameters
     #ifdef PRE_RECTIFY_IMAGES
+    	RCLCPP_INFO(this->get_logger(), "Reading stereo parameters for pre-rectification");
         readParameters(strSettingsFile, map1_L, map2_L, roi_L, map1_R, map2_R, roi_R) ;
         common_roi = roi_L & roi_R;
     #endif
@@ -82,13 +83,24 @@ StereoSlamNode::StereoSlamNode(ORB_SLAM3::System *pSLAM, const string &strSettin
 
     RCLCPP_INFO(this->get_logger(), "ORB-SLAM3 STARTED IN STEREO MODE. NODE WILL WAIT FOR IMAGES IN TOPICS %s and %s", this->camera_left.c_str(), this->camera_right.c_str());
 
+    contImageLeft = 0;
+    contImageRight = 0;
+    contTrackStereo = 0;
+    firstTimeStampLeft = -1;
+
     // Starts orbslam3. This thread is used to syncronize the two images
     syncThread_ = new std::thread(&StereoSlamNode::SyncImg, this);
-    // std::cout << "End Costructor" << endl;
+    
 }
 
 StereoSlamNode::~StereoSlamNode()
 {
+    RCLCPP_INFO(this->get_logger(), "Number of left images arrived:\t" + std::to_string(contImageLeft));
+    RCLCPP_INFO(this->get_logger(), "Number of right images arrived:\t" + std::to_string(contImageRight));
+    RCLCPP_INFO(this->get_logger(), "Number of TrackStereo calls:\t" + std::to_string(contTrackStereo));
+    RCLCPP_INFO(this->get_logger(), "First timestamp of left image:\t" + std::to_string(firstTimeStampLeft));
+    RCLCPP_INFO(this->get_logger(), "Last timestamp of left image:\t" + std::to_string(lastTimeStampLeft));
+    
     // Stop all threads
     m_SLAM->Shutdown();
 
@@ -100,19 +112,27 @@ StereoSlamNode::~StereoSlamNode()
     RCLCPP_INFO(this->get_logger(), "Saved CameraTrajectory.txt ");
 }
 
+
 /**
  *  Function that saves left image in variable left_image_
  */
 void StereoSlamNode::leftCallback(const ImageMsg::SharedPtr msg)
 {
+    contImageLeft ++;
     bufMutexLeft_.lock();
     try
     {
+	
 
+	double t =  msg->header.stamp.sec + (msg->header.stamp.nanosec / 1e9);
+	if (firstTimeStampLeft == -1)
+		firstTimeStampLeft = t;
+	lastTimeStampLeft = t;
+	
         RCLCPP_INFO(this->get_logger(), "left" );
-
-        // left_image_ = cv_bridge::toCvShare(msg, "bgr8")->image;  // For image
-        left_image_ = cv_bridge::toCvCopy(msg, "bgr8")->image;      // For compressed images
+        left_image_ = cv_bridge::toCvCopy(msg, "bgr8")->image;  
+        
+        tImLeft = t;
 
         timestamp = Utility::StampToSec(msg->header.stamp);
 
@@ -135,10 +155,11 @@ void StereoSlamNode::rightCallback(const ImageMsg::SharedPtr msg)
     bufMutexRight_.lock();
     try
     {
+        contImageRight ++;
         RCLCPP_INFO(this->get_logger(), "right" );
-
-        // right_image_ = cv_bridge::toCvShare(msg, "bgr8")->image; // For image
-        right_image_ = cv_bridge::toCvCopy(msg, "bgr8")->image;     // For compressed images
+        right_image_ = cv_bridge::toCvCopy(msg, "bgr8")->image;    
+        tImRight = msg->header.stamp.sec + (msg->header.stamp.nanosec / 1e9);
+ 
 
         // cv::imshow("Right NON Rectified", right_image_);
 
@@ -164,22 +185,32 @@ static std::string quaternionToString(const Eigen::Quaternionf &q)
 
 void StereoSlamNode::SyncImg()
 {
+    const double maxTimeDiff = 0.01;
+
     while (1)
     {
         cv::Mat imLeft, imRight;
-        double tImLeft = 0, tImRight = 0;
         if (!left_image_.empty() && !right_image_.empty())
         {
+            if ((tImLeft - tImRight) > maxTimeDiff || (tImRight - tImLeft) > maxTimeDiff)
+            //if (tImLeft != tImRight)
+            {
+                //std::cout << "big time difference" << std::endl;
+                continue;
+            }
+
+            contTrackStereo ++;
+            
             // Compute ORB-SLAM3 on the 2 grabbed images
             StereoSlamNode::GrabStereo(left_image_, right_image_);
             
             // Remove the images, so they won't be re-computated
-            left_image_.release();
-            right_image_.release();
+            //left_image_.release();
+           // right_image_.release();
 
         }
 
-        std::chrono::milliseconds tSleep(1);
+        std::chrono::milliseconds tSleep(50);
         std::this_thread::sleep_for(tSleep);
     }
 }
@@ -253,8 +284,8 @@ void StereoSlamNode::GrabStereo(cv::Mat image_L, cv::Mat image_R)
     message.pose.pose = output_pose;
     message.header.frame_id = header_id_frame;
     message.child_frame_id = child_id_frame;
-
-    //add timestamp to message
+    
+    // add timestamp to message
     message.header.stamp = this->now();
     
     quaternion_pub->publish(message);

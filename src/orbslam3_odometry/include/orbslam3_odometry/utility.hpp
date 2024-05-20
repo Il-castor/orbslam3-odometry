@@ -18,3 +18,12 @@ public:
 };
 
 #endif
+
+// image_msg_define.hpp
+#ifndef IMAGE_MSG_DEFINE_HPP
+#define IMAGE_MSG_DEFINE_HPP
+
+#define ImageMsg sensor_msgs::msg::CompressedImage
+
+#endif // IMAGE_MSG_DEFINE_HPP
+

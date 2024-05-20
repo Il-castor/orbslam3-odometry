@@ -2,6 +2,7 @@
 #include "sensor_msgs/msg/image.hpp"
 #include <opencv2/opencv.hpp>
 #include <cv_bridge/cv_bridge.h>
+#include "orbslam3_odometry/utility.hpp"
 #include "stereo_rectification.h"
 #include "sensor_msgs/msg/compressed_image.hpp"
 
@@ -23,15 +24,17 @@ public:
         subscription_right = this->create_subscription<ImageMsg>(
             this->camera_right_topic, qos, std::bind(&JustCheckStereoCalibration::rightCallback, this, std::placeholders::_1));
 
-        // Read the parametes and compute the common_roi, so that cropped and rectified images will have the same size
-        readParameters(strSettingsFile, map1_L, map2_L, roi_L, map1_R, map2_R, roi_R);
-        common_roi = roi_L & roi_R;
+        
 
         if (isTakingPicture)
             RCLCPP_INFO(this->get_logger(), "JUST TAKING PICTURE. IMAGES WILL BE READ FROM TOPICS %s and %s", this->camera_left_topic.c_str(), this->camera_right_topic.c_str());
-        else
+        else {
+			// Read the parametes and compute the common_roi, so that cropped and rectified images will have the same size
+			readParameters(strSettingsFile, map1_L, map2_L, roi_L, map1_R, map2_R, roi_R);
+			common_roi = roi_L & roi_R;
             RCLCPP_INFO(this->get_logger(), "CHECKING STEREO RECTIFICATION STARTED. IMAGES WILL BE READ FROM TOPICS %s and %s", this->camera_left_topic.c_str(), this->camera_right_topic.c_str());
-
+		}
+		
         // cv::namedWindow("Synchronized Images", cv::WINDOW_NORMAL);
 
         // cv::namedWindow("Left NON Rectified", cv::WINDOW_NORMAL);
@@ -42,8 +45,6 @@ public:
     }
 
 private:
-    //using ImageMsg = sensor_msgs::msg::CompressedImage; // + cambia le due callbacks delle immagini
-    using ImageMsg = sensor_msgs::msg::Image; // + cambia le due callbacks delle immagini
 
     void loadParameters()
     {
@@ -127,13 +128,14 @@ private:
                 }
 
                 // Display the Rectified images
-                cv::imshow("Left Rectified (non cropped)", img_non_cropped_L);
-                cv::imshow("Right Rectified (non cropped)", img_non_cropped_R);
-                cv::waitKey(0);
+                //cv::imshow("Left Rectified (non cropped)", img_non_cropped_L);
+                //cv::imshow("Right Rectified (non cropped)", img_non_cropped_R);
+                
  
                 // Perform stereo matching
                 std::cout << "disparity map" << std::endl;
                 show_disparity(left_image_, right_image_);
+				cv::waitKey(0);
 
                 // Clear matrixes so they won't be re-processed
                 left_image_.release();

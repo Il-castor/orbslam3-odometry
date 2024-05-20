@@ -25,9 +25,8 @@ The node subscribes to the following topics and waits for data:
 
 In the stereo mode, the node will subscribe to both topics; while in monocular mode, the node will subscribe to only one of them, according to is_camera_left parameter (described below).
 
-The images are currently of type `sensor_msgs::msg::CompressedImage`. This can be changed to `sensor_msgs::msg::Image`, by performing this changes as indicated in the comments:
-- `ImageMsg` in [stereo.hpp](src/orbslam3_odometry/src/stereo/stereo.hpp) and  [monocular.hpp](src/orbslam3_odometry/src/stereo/stereo.hpp)
-- Images callbacks in [stereo.cpp](src/orbslam3_odometry/src/stereo/stereo.cpp) and [monocular.cpp](src/orbslam3_odometry/src/monocular/monocular.cpp) 
+The images are currently of type `sensor_msgs::msg::CompressedImage`. This can be changed to `sensor_msgs::msg::Image`, by changing `ImageMsg` in [utility.hpp](src/orbslam3_odometry/include/orbslam3_odometry/utility.hpp).
+ 
 
 Although ORB-SLAM3 provides a way to use also IMU data for the mapping/localization, we couldn't find a way to make it work properly. For this reason, this node won't subscribe to IMU. 
 

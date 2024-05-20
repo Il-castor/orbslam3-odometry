@@ -6,8 +6,10 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /Odometry FastLio (Verde)1
         - /Odometry FastLio (Verde)1/Topic1
         - /Odometry FastLio (Verde)1/Shape1
+        - /Odometry Orbslam (Rosso)1
         - /Image Left1/Topic1
         - /Image Right1/Topic1
       Splitter Ratio: 0.5
@@ -78,7 +80,7 @@ Visualization Manager:
           Value: true
         Value: true
       Enabled: true
-      Keep: 100
+      Keep: 1000000
       Name: Odometry FastLio (Verde)
       Position Tolerance: 0.10000000149011612
       Shape:
@@ -116,7 +118,7 @@ Visualization Manager:
           Value: true
         Value: true
       Enabled: true
-      Keep: 100
+      Keep: 1000000
       Name: Odometry Orbslam (Rosso)
       Position Tolerance: 0.10000000149011612
       Shape:
@@ -207,16 +209,16 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 15.530939102172852
+      Distance: 36.286468505859375
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 5.443861961364746
-        Y: 0.005040943622589111
-        Z: 1.3854520320892334
+        X: 5.919672012329102
+        Y: 4.208126544952393
+        Z: 1.4546856880187988
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false

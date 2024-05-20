@@ -10,6 +10,8 @@ The first three outputs (map1_L,map2_L,roi_L) are for the left camera (aka Camer
 */
 void readParameters(std::string path_yaml, cv::Mat &map1_L, cv::Mat &map2_L, cv::Rect &roi_L, cv::Mat &map1_R, cv::Mat &map2_R, cv::Rect &roi_R) {
 
+	std::cerr << "YAML file:" << path_yaml << std::endl;
+    
     // Load the YAML file
     cv::FileStorage fs(path_yaml, cv::FileStorage::READ);
 
@@ -169,6 +171,8 @@ void show_disparity(const cv::Mat &img1_non_cropped, const cv::Mat &img2_non_cro
     // std::cout << "qui" << std::endl;
     cv::cvtColor(disparityMap, disparityMap, cv::COLOR_GRAY2BGR);
     cv::hconcat(concatenated, disparityMap, concatenated);
+    
+    cv::resize(concatenated, concatenated, cv::Size(concatenated.cols / 2, concatenated.rows / 2));
 
     cv::imshow("Left and right rectified + Disparity map", concatenated);
 

@@ -31,9 +31,7 @@ public:
     ~StereoSlamNode();
 
 private:
-    //using ImageMsg = sensor_msgs::msg::CompressedImage;     // Se cambiato, cambia anche le due callbacks
-    using ImageMsg = sensor_msgs::msg::Image;     
-    
+
     void loadParameters();
     void GrabStereo(cv::Mat image_L, cv::Mat image_R);
     void SyncImg();
@@ -65,6 +63,15 @@ private:
     // Rectification params
     cv::Mat map1_L, map2_L, map1_R,  map2_R;
     cv::Rect roi_L, roi_R, common_roi;
+    
+    int contImageLeft, contImageRight, contTrackStereo;
+    double firstTimeStampLeft, lastTimeStampLeft;
+    
+    // Left and right timestamp
+    double tImLeft, tImRight;
+    
+
+
 
 };
 #endif
