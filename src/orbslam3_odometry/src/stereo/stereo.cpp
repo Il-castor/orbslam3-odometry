@@ -205,48 +205,67 @@ void StereoSlamNode::SyncImg()
             StereoSlamNode::GrabStereo(left_image_, right_image_);
             
             // Remove the images, so they won't be re-computated
-            //left_image_.release();
-           // right_image_.release();
+            left_image_.release();
+            right_image_.release();
 
         }
 
-        std::chrono::milliseconds tSleep(50);
+        std::chrono::milliseconds tSleep(1);
         std::this_thread::sleep_for(tSleep);
     }
 }
 
 void StereoSlamNode::GrabStereo(cv::Mat image_L, cv::Mat image_R)
 {
+    RCLCPP_INFO(this->get_logger(), "GrabStereo ");
     // Initial time
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
 #ifdef PRE_RECTIFY_IMAGES
     // First of all we pre-rectify the images
+    RCLCPP_INFO(this->get_logger(), "Prima del remap ");
     cv::Mat left_rectified_non_cropped, right_rectified_non_cropped;
+    
+    bufMutexLeft_.lock();
     rectify_image(image_L, map1_L, map2_L, common_roi, left_rectified_non_cropped);
+    bufMutexLeft_.unlock();
+    
+    bufMutexRight_.lock();
     rectify_image(image_R, map1_R, map2_R, common_roi, right_rectified_non_cropped);
+    bufMutexRight_.unlock();
 
 #ifdef DEBUG
     show_disparity(image_L, image_R);
 #endif
-
+    RCLCPP_INFO(this->get_logger(), "Prima del cutting ");
     // If necessary, perform changes to the images here.
     if (cutting_x != -1){
         Utility::cutting_image(left_rectified_non_cropped, cutting_rect);
         Utility::cutting_image(right_rectified_non_cropped, cutting_rect);
     }
-
+    
+    RCLCPP_INFO(this->get_logger(), "Prima della track stereo ");
     // Call ORB-SLAM3 on the 2 pre-rectified images
     Sophus::SE3f Tcw = m_SLAM->TrackStereo(left_rectified_non_cropped, right_rectified_non_cropped, timestamp);
+    RCLCPP_INFO(this->get_logger(), "dopo la track stereo ");
 #else
+    
     // If necessary, perform changes to the images here.
     if (cutting_x != -1){
+    	bufMutexLeft_.lock();
         Utility::cutting_image(image_L, cutting_rect);
+        bufMutexLeft_.unlock();
+        
+        bufMutexRight_.lock();
         Utility::cutting_image(image_R, cutting_rect);
+        bufMutexRight_.unlock();
     }
 
     // Call ORB-SLAM3 on the 2 original images
     Sophus::SE3f Tcw = m_SLAM->TrackStereo(image_L, image_R, timestamp);
+    
+    
+    
 #endif
      
     // Obtain the position and the quaternion
