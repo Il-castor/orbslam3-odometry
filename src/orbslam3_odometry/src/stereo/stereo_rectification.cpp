@@ -146,16 +146,16 @@ or
 */
 void show_disparity(const cv::Mat &img1_non_cropped, const cv::Mat &img2_non_cropped){
     cv::Mat disparityMap;
-    int numDisparities = 16;
-    int blockSize = 15;
-    cv::Ptr<cv::StereoSGBM> sgbm = cv::StereoSGBM::create(0, numDisparities, blockSize);
-    sgbm->compute(img1_non_cropped, img2_non_cropped, disparityMap);
+    const int numDisparitiesVecchio = 16;
+    const int blockSizeVecchio = 15;
+    cv::Ptr<cv::StereoSGBM> sgbmVecchio = cv::StereoSGBM::create(0, numDisparitiesVecchio, blockSizeVecchio);
+    sgbmVecchio->compute(img1_non_cropped, img2_non_cropped, disparityMap);
 
     // Normalize the disparity map for display
     cv::normalize(disparityMap, disparityMap, 0, 255, cv::NORM_MINMAX, CV_8U);
 
     // Just show disparity map...
-    // cv::imshow("Disparity Map", disparityMap);
+     cv::imshow("Disparity Map Vecchia", disparityMap);
     // return;
 
 
@@ -164,17 +164,44 @@ void show_disparity(const cv::Mat &img1_non_cropped, const cv::Mat &img2_non_cro
     std::cout << "Image 2 dimensions: " << img2_non_cropped.size() << ", type: " << img2_non_cropped.type() << std::endl;
     std::cout << "Image 3 dimensions: " << disparityMap.size() << ", type: " << disparityMap.type() << std::endl;*/
 
+    //nuovo metodo
+    // Create SGBM object
+    cv::Ptr<cv::StereoSGBM> sgbm = cv::StereoSGBM::create(0, 16, 3);
 
+    // Set SGBM parameters
+    const int numDisparities = 16 * 5;  // Maximum disparity minus minimum disparity
+    const int blockSize = 5;            // Matched block size. It must be an odd number >=1
+
+    sgbm->setMinDisparity(0);
+    sgbm->setNumDisparities(numDisparities);
+    sgbm->setBlockSize(blockSize);
+    sgbm->setP1(8 * img1_non_cropped.channels() * blockSize * blockSize);
+    sgbm->setP2(32 * img2_non_cropped.channels() * blockSize * blockSize);
+    sgbm->setDisp12MaxDiff(1);
+    sgbm->setPreFilterCap(63);
+    sgbm->setUniquenessRatio(10);
+    sgbm->setSpeckleWindowSize(100);
+    sgbm->setSpeckleRange(32);
+    sgbm->setMode(cv::StereoSGBM::MODE_SGBM);
+
+    // Compute the disparity map
+    cv::Mat disparity;
+    cv::Mat disparityMapNuova;
+    sgbm->compute(img1_non_cropped, img2_non_cropped, disparity);
+
+    // Normalize the disparity map for visualization
+    cv::Mat disparity8U;
+    normalize(disparity, disparity8U, 0, 255, cv::NORM_MINMAX, CV_8U);
 
     cv::Mat concatenated;
     cv::hconcat(img1_non_cropped, img2_non_cropped, concatenated);
     // std::cout << "qui" << std::endl;
-    cv::cvtColor(disparityMap, disparityMap, cv::COLOR_GRAY2BGR);
-    cv::hconcat(concatenated, disparityMap, concatenated);
+    cv::cvtColor(disparity8U, disparityMapNuova, cv::COLOR_GRAY2BGR);
+    cv::hconcat(concatenated, disparityMapNuova, concatenated);
     
     cv::resize(concatenated, concatenated, cv::Size(concatenated.cols / 2, concatenated.rows / 2));
 
-    cv::imshow("Left and right rectified + Disparity map", concatenated);
+    cv::imshow("Left and right rectified + Disparity map Nuova ", concatenated);
 
 }
 
