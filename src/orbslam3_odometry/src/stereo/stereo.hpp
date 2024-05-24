@@ -21,7 +21,8 @@
 #include "sensor_msgs/msg/compressed_image.hpp"
 #include "stereo_rectification.h"
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
-
+#include "sensor_msgs/msg/point_cloud2.hpp"
+#include "sensor_msgs/msg/point_field.hpp"
 
 class StereoSlamNode : public rclcpp::Node
 {
@@ -71,6 +72,11 @@ private:
     double tImLeft, tImRight;
     
 
+    // Point cloud and Key points varables/methods
+    std::vector<float> depths ;
+    sensor_msgs::msg::PointCloud2 mappoint_to_pointcloud(std::vector<ORB_SLAM3::MapPoint*> map_points, rclcpp::Time msg_time, Eigen::Vector3f actualPosition) ;
+    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr publisherPointCloud;
+    cv::Scalar interpolateColor(float value, float minDepth, float maxDepth) ;
 
 
 };

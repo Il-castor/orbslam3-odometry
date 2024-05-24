@@ -4,11 +4,14 @@
 #include <chrono>
 
 // If defined the node will print debug information and will show disparity map
-// #define DEBUG
+//#define DEBUG
 
 // If defined, it will pre-rectify images, before giving it in input to orbslam.
 // It should be enables for Basler and disabled for stereo-camera like Zed
 #define PRE_RECTIFY_IMAGES
+
+// If defined, the pointcloud created by orbslam will be published
+//#define PUBLISH_POINT_CLOUD
 
 using std::placeholders::_1;
 using std::placeholders::_2;
@@ -87,6 +90,10 @@ StereoSlamNode::StereoSlamNode(ORB_SLAM3::System *pSLAM, const string &strSettin
     contImageRight = 0;
     contTrackStereo = 0;
     firstTimeStampLeft = -1;
+    
+    #ifdef PUBLISH_POINT_CLOUD
+	    publisherPointCloud = this->create_publisher<sensor_msgs::msg::PointCloud2>("/camera/pointCloud", 10);
+	#endif
 
     // Starts orbslam3. This thread is used to syncronize the two images
     syncThread_ = new std::thread(&StereoSlamNode::SyncImg, this);
@@ -192,12 +199,11 @@ void StereoSlamNode::SyncImg()
         cv::Mat imLeft, imRight;
         if (!left_image_.empty() && !right_image_.empty())
         {
-            if ((tImLeft - tImRight) > maxTimeDiff || (tImRight - tImLeft) > maxTimeDiff)
-            //if (tImLeft != tImRight)
+            /*if ((tImLeft - tImRight) > maxTimeDiff || (tImRight - tImLeft) > maxTimeDiff)
             {
                 //std::cout << "big time difference" << std::endl;
                 continue;
-            }
+            }*/
 
             contTrackStereo ++;
             
@@ -215,58 +221,61 @@ void StereoSlamNode::SyncImg()
     }
 }
 
+
+
 void StereoSlamNode::GrabStereo(cv::Mat image_L, cv::Mat image_R)
 {
     RCLCPP_INFO(this->get_logger(), "GrabStereo ");
     // Initial time
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-
-#ifdef PRE_RECTIFY_IMAGES
-    // First of all we pre-rectify the images
-    RCLCPP_INFO(this->get_logger(), "Prima del remap ");
     cv::Mat left_rectified_non_cropped, right_rectified_non_cropped;
-    
-    bufMutexLeft_.lock();
-    rectify_image(image_L, map1_L, map2_L, common_roi, left_rectified_non_cropped);
-    bufMutexLeft_.unlock();
-    
-    bufMutexRight_.lock();
-    rectify_image(image_R, map1_R, map2_R, common_roi, right_rectified_non_cropped);
-    bufMutexRight_.unlock();
 
-#ifdef DEBUG
-    show_disparity(image_L, image_R);
-#endif
-    RCLCPP_INFO(this->get_logger(), "Prima del cutting ");
-    // If necessary, perform changes to the images here.
-    if (cutting_x != -1){
-        Utility::cutting_image(left_rectified_non_cropped, cutting_rect);
-        Utility::cutting_image(right_rectified_non_cropped, cutting_rect);
-    }
-    
-    RCLCPP_INFO(this->get_logger(), "Prima della track stereo ");
-    // Call ORB-SLAM3 on the 2 pre-rectified images
-    Sophus::SE3f Tcw = m_SLAM->TrackStereo(left_rectified_non_cropped, right_rectified_non_cropped, timestamp);
-    RCLCPP_INFO(this->get_logger(), "dopo la track stereo ");
-#else
-    
-    // If necessary, perform changes to the images here.
-    if (cutting_x != -1){
-    	bufMutexLeft_.lock();
-        Utility::cutting_image(image_L, cutting_rect);
-        bufMutexLeft_.unlock();
-        
-        bufMutexRight_.lock();
-        Utility::cutting_image(image_R, cutting_rect);
-        bufMutexRight_.unlock();
-    }
+	#ifdef PRE_RECTIFY_IMAGES
+		// First of all we pre-rectify the images
+		RCLCPP_INFO(this->get_logger(), "Prima del remap ");
+		
+		
+		bufMutexLeft_.lock();
+		rectify_image(image_L, map1_L, map2_L, common_roi, left_rectified_non_cropped);
+		bufMutexLeft_.unlock();
+		
+		bufMutexRight_.lock();
+		rectify_image(image_R, map1_R, map2_R, common_roi, right_rectified_non_cropped);
+		bufMutexRight_.unlock();
 
-    // Call ORB-SLAM3 on the 2 original images
-    Sophus::SE3f Tcw = m_SLAM->TrackStereo(image_L, image_R, timestamp);
+		#ifdef DEBUG
+			show_disparity(image_L, image_R);
+		#endif
+		RCLCPP_INFO(this->get_logger(), "Prima del cutting ");
+		
+		// If necessary, perform changes to the images here.
+		if (cutting_x != -1){
+		    Utility::cutting_image(left_rectified_non_cropped, cutting_rect);
+		    Utility::cutting_image(right_rectified_non_cropped, cutting_rect);
+		}
+		RCLCPP_INFO(this->get_logger(), "Prima della track stereo ");
+		
+		// Call ORB-SLAM3 on the 2 pre-rectified images
+		Sophus::SE3f Tcw = m_SLAM->TrackStereo(left_rectified_non_cropped, right_rectified_non_cropped, timestamp);
+		RCLCPP_INFO(this->get_logger(), "dopo la track stereo ");
+	#else
+
     
-    
-    
-#endif
+		// If necessary, perform changes to the images here.
+		if (cutting_x != -1){
+			bufMutexLeft_.lock();
+		    Utility::cutting_image(image_L, cutting_rect);
+		    bufMutexLeft_.unlock();
+		    
+		    bufMutexRight_.lock();
+		    Utility::cutting_image(image_R, cutting_rect);
+		    bufMutexRight_.unlock();
+		}
+
+		// Call ORB-SLAM3 on the 2 original images
+		Sophus::SE3f Tcw = m_SLAM->TrackStereo(image_L, image_R, timestamp);
+		
+	#endif
      
     // Obtain the position and the quaternion
     Sophus::SE3f Twc = Tcw.inverse();
@@ -313,4 +322,115 @@ void StereoSlamNode::GrabStereo(cv::Mat image_L, cv::Mat image_R)
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     double tempo = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(t2 - t1).count();
     m_SLAM->InsertTrackTime(tempo);
+    
+    #ifdef PUBLISH_POINT_CLOUD
+		// Point cloud pubblication
+		RCLCPP_INFO(this->get_logger(), "prima del mappiont to pointcloud");
+		depths.clear();
+		sensor_msgs::msg::PointCloud2 cloud = mappoint_to_pointcloud( m_SLAM->GetTrackedMapPoints(), message.header.stamp, twc);
+		publisherPointCloud->publish(cloud);
+		RCLCPP_INFO(this->get_logger(), "dopo il mappiont to pointcloud");
+    
+    	// Tracked points showing is currently disabled...
+		std::vector<cv::KeyPoint> keypoints = m_SLAM->GetTrackedKeyPointsUn();
+		std::cout << "Size key point: " << keypoints.size() << std::endl;
+		
+		/*// Remove this code to enable it 
+		float minDepth = *std::min_element(depths.begin(), depths.end());
+		float maxDepth = *std::max_element(depths.begin(), depths.end());
+
+		for (size_t i = 0; i < keypoints.size(); ++i) {
+		   cv::Point2f point = keypoints[i].pt;
+		   float depth = depths[i];
+		   cv::Scalar color = interpolateColor(depth, minDepth, maxDepth);
+		   cv::circle(left_rectified_non_cropped, point, 3, color, cv::FILLED);
+		}
+		
+		
+		
+		cv::imshow("Keypoints", left_rectified_non_cropped);
+		cv::waitKey(1);*/
+	#endif
 }
+
+// Key point color interpolation
+cv::Scalar StereoSlamNode::interpolateColor(float value, float minDepth, float maxDepth) { 
+	// Doesn't working
+    float range = maxDepth - minDepth;
+    float normalized = (value - minDepth) / range;
+
+    // Cold color (blue)
+    cv::Vec3b coldColor(255, 0, 0);
+    // Warm color (red)
+    cv::Vec3b warmColor(0, 0, 255);
+
+    cv::Vec3b color = (1 - normalized) * coldColor + normalized * warmColor;
+    return cv::Scalar(color[0], color[1], color[2]);
+}
+
+// Converter from MapPoint to Point Cloud  
+sensor_msgs::msg::PointCloud2 StereoSlamNode::mappoint_to_pointcloud(std::vector<ORB_SLAM3::MapPoint*> map_points, rclcpp::Time msg_time, Eigen::Vector3f actualPosition) {
+
+    const int num_channels = 3; // x y z
+
+    if (map_points.size() == 0)
+    {
+        std::cout << "Map point vector is empty!" << std::endl;
+    }
+
+    sensor_msgs::msg::PointCloud2 cloud;
+
+    cloud.header.stamp = msg_time;
+    cloud.header.frame_id = "velodyne";	// So it can be shown with lidar's velodyne
+    cloud.height = 1;
+    cloud.width = map_points.size();
+    std::cout << "Size map point: " << map_points.size() << std::endl;
+    cloud.is_bigendian = false;
+    cloud.is_dense = true;
+    cloud.point_step = num_channels * sizeof(float);
+    cloud.row_step = cloud.point_step * cloud.width;
+    cloud.fields.resize(num_channels);
+
+    std::string channel_id[] = { "x", "y", "z"};
+
+    for (int i = 0; i < num_channels; i++)
+    {
+        cloud.fields[i].name = channel_id[i];
+        cloud.fields[i].offset = i * sizeof(float);
+        cloud.fields[i].count = 1;
+        cloud.fields[i].datatype = sensor_msgs::msg::PointField::FLOAT32;
+    }
+
+    cloud.data.resize(cloud.row_step * cloud.height);
+
+    unsigned char *cloud_data_ptr = &(cloud.data[0]);
+
+    
+
+    for (unsigned int i = 0; i < cloud.width; i++)
+    {
+        if (map_points[i])
+        {
+            
+            //map_points[i]->SetWorldPos(vectorWorldPos );
+            //Eigen::Vector3f tmp = map_points[i]->GetWorldPos();
+            //std::cout << "Vector world pos: " << tmp.x() << " " << tmp.y() << " " << tmp.z() << std::endl;  
+            Eigen::Vector3d P3Dw = map_points[i]->GetWorldPos().cast<double>();
+
+            tf2::Vector3 point_translation(P3Dw.x()-actualPosition.x(), P3Dw.y()-actualPosition.y(), P3Dw.z()-actualPosition.z());
+
+            float data_array[num_channels] = {
+                point_translation.z(),
+                -point_translation.x(),
+                -point_translation.y()
+            };
+            
+            depths.push_back(data_array[0]);
+
+            memcpy(cloud_data_ptr+(i*cloud.point_step), data_array, num_channels*sizeof(float));
+        }
+    }
+    return cloud;
+}
+
+
