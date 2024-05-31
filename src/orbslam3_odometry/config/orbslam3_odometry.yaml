@@ -21,11 +21,11 @@
     # For monocular version only. It indicates whether to subscribe to camera left or right topic for images. 
     #   true    -> camera left's topic 
     #   false   -> camera right
-    is_camera_left: false
+    is_camera_left: true
 
     # For monocular version only, since it has no depth info. It indicates the scale to multiply the calculated position (usually between 5 and 10)
     # Da testare
-    scale_position_mono: 1
+    scale_position_mono: 5
 
     # For monocular version only. Degree to move the calculated pose. If 0 pose will not be changed.
     degree_move_pose_mono: 10
@@ -49,7 +49,7 @@
     path_vocabulary: src/orbslam3_odometry/config/ORBvoc.txt
 
     # Full file path to yaml settings (for ORB_SLAM3)
-    path_yaml_settings: src/orbslam3_odometry/config/basler_stereo_11_05_24_test.yaml
+    path_yaml_settings: /mnt/hgfs/cartella_condivisa/bag_26_05_24/basler_stereo_26_05_24_test.yaml
     
 
     # For stereo mode only. Doesn't make ORB_SLAM3 start (if true). It just shows the results of the stereo calibration with the params in the path_yaml_settings

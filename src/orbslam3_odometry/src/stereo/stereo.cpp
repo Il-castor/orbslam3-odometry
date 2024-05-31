@@ -89,7 +89,8 @@ StereoSlamNode::StereoSlamNode(ORB_SLAM3::System *pSLAM, const string &strSettin
     quaternion_pub = this->create_publisher<nav_msgs::msg::Odometry>(topic_pub_quat, 10);
 
     RCLCPP_INFO(this->get_logger(), "ORB-SLAM3 STARTED IN STEREO MODE. NODE WILL WAIT FOR IMAGES IN TOPICS %s and %s", this->camera_left.c_str(), this->camera_right.c_str());
-
+    Utility::printCommonInfo(qos);
+    
     contImageLeft = 0;
     contImageRight = 0;
     contTrackStereo = 0;

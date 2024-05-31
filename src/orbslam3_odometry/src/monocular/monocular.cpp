@@ -86,6 +86,7 @@ MonocularSlamNode::MonocularSlamNode(ORB_SLAM3::System *pSLAM)
 	    publisherPointCloud = this->create_publisher<sensor_msgs::msg::PointCloud2>("/camera/pointCloud", 10);
 	#endif
 
+    Utility::printCommonInfo(qos);
     // std::cout << "End Costructor" << std::endl;
 }
 
@@ -201,7 +202,7 @@ void MonocularSlamNode::GrabImage(const ImageMsg::SharedPtr msg)
     #ifdef PUBLISH_POINT_CLOUD
 		// Point cloud pubblication
 		RCLCPP_INFO(this->get_logger(), "prima del mappiont to pointcloud");
-		depths.clear();
+		// depths.clear();
 		sensor_msgs::msg::PointCloud2 cloud = mappoint_to_pointcloud( m_SLAM->GetTrackedMapPoints(), message.header.stamp, twc);
 		publisherPointCloud->publish(cloud);
 		RCLCPP_INFO(this->get_logger(), "dopo il mappiont to pointcloud");
@@ -210,21 +211,22 @@ void MonocularSlamNode::GrabImage(const ImageMsg::SharedPtr msg)
 		std::vector<cv::KeyPoint> keypoints = m_SLAM->GetTrackedKeyPointsUn();
 		std::cout << "Size key point: " << keypoints.size() << std::endl;
 		
-		/*// Remove this code to enable it 
+		// Remove this code to enable it 
 		float minDepth = *std::min_element(depths.begin(), depths.end());
 		float maxDepth = *std::max_element(depths.begin(), depths.end());
 
 		for (size_t i = 0; i < keypoints.size(); ++i) {
 		   cv::Point2f point = keypoints[i].pt;
-		   float depth = depths[i];
-		   cv::Scalar color = interpolateColor(depth, minDepth, maxDepth);
-		   cv::circle(left_rectified_non_cropped, point, 3, color, cv::FILLED);
+		//    float depth = depths[i];
+		//    cv::Scalar color = interpolateColor(depth, minDepth, maxDepth);
+            cv::Vec3b color(0, 0, 255);
+		   cv::circle(image_for_orbslam, point, 3, color, cv::FILLED);
 		}
 		
 		
 		
-		cv::imshow("Keypoints", left_rectified_non_cropped);
-		cv::waitKey(1);*/
+		cv::imshow("Keypoints", image_for_orbslam);
+		cv::waitKey(1);
 	#endif
 }
 

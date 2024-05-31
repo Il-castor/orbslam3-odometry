@@ -40,7 +40,8 @@ public:
 			common_roi = roi_L & roi_R;
             RCLCPP_INFO(this->get_logger(), "CHECKING STEREO RECTIFICATION STARTED. IMAGES WILL BE READ FROM TOPICS %s and %s", this->camera_left_topic.c_str(), this->camera_right_topic.c_str());
 		}
-		
+		Utility::printCommonInfo(qos);
+
         // cv::namedWindow("Synchronized Images", cv::WINDOW_NORMAL);
 
         // cv::namedWindow("Left NON Rectified", cv::WINDOW_NORMAL);
