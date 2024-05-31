@@ -45,6 +45,9 @@ fprintf(fileID, 'Camera2.p1: %.12f\n', distortionCoefficients2(3));
 fprintf(fileID, 'Camera2.p2: %.12f\n', distortionCoefficients2(4));
 
 fprintf(fileID, '\n');
+baseline = norm(stereoParams.TranslationOfCamera2);
+baseline = baseline / 1000; 
+fprintf(fileID, 'Stereo.b: %.5f\n', baseline);
 
 % Create the transformation matrix
 T_c1_c2 = eye(4); % Initialize as identity matrix

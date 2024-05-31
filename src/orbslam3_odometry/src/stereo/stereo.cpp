@@ -13,6 +13,10 @@
 // If defined, the pointcloud created by orbslam will be published
 //#define PUBLISH_POINT_CLOUD
 
+// To have debug prints, comment this line:
+#define RCLCPP_INFO(...) (void)0
+
+
 using std::placeholders::_1;
 using std::placeholders::_2;
 

@@ -5,6 +5,7 @@
 #include "orbslam3_odometry/utility.hpp"
 #include "stereo_rectification.h"
 #include "sensor_msgs/msg/compressed_image.hpp"
+#include <sys/stat.h>
 
 using namespace std::chrono_literals;
 
@@ -26,9 +27,14 @@ public:
 
         
 
-        if (isTakingPicture)
+        if (isTakingPicture) {
+            if (!directory_exists(path) || !directory_exists(pathLeft) || !directory_exists(pathRight) ) {
+                RCLCPP_ERROR(this->get_logger(), "Directory " + path + " oppure " + pathLeft +  " oppure " + pathRight +" Non essitono. Crearle: mkdir -p "+ pathLeft + " ; mkdir -p "+ pathRight);
+                exit(1);
+            }
+
             RCLCPP_INFO(this->get_logger(), "JUST TAKING PICTURE. IMAGES WILL BE READ FROM TOPICS %s and %s", this->camera_left_topic.c_str(), this->camera_right_topic.c_str());
-        else {
+        } else {
 			// Read the parametes and compute the common_roi, so that cropped and rectified images will have the same size
 			readParameters(strSettingsFile, map1_L, map2_L, roi_L, map1_R, map2_R, roi_R);
 			common_roi = roi_L & roi_R;
@@ -62,7 +68,7 @@ private:
     {
         try
         {
-            RCLCPP_INFO(this->get_logger(), "left" );
+            //RCLCPP_INFO(this->get_logger(), "left" );
 
             //left_image_ = cv_bridge::toCvShare(msg, "bgr8")->image;  // For image
             left_image_ = cv_bridge::toCvCopy(msg, "bgr8")->image; // For compressed images
@@ -81,7 +87,7 @@ private:
     {
         try
         {
-            RCLCPP_INFO(this->get_logger(), "right" );
+            //RCLCPP_INFO(this->get_logger(), "right" );
 
             //right_image_ = cv_bridge::toCvShare(msg, "bgr8")->image;
             right_image_ = cv_bridge::toCvCopy(msg, "bgr8")->image;
@@ -95,6 +101,12 @@ private:
             RCLCPP_ERROR(this->get_logger(), "cv_bridge exception: %s", e.what());
             return;
         }
+    }
+
+    bool directory_exists(const std::string &dir)
+    {
+        struct stat info;
+        return stat(dir.c_str(), &info) == 0 && S_ISDIR(info.st_mode);
     }
 
     void SyncImages()
@@ -158,10 +170,10 @@ private:
                 if (key == 32)
                 { // Spacebar was pressed
                     // watch -n1 ls -Rl /home/formula-student/immagini
-                    std::string path = "/home/formula-student/immagini";
+                    
                     std::cout << "Salvo immagini. CONTROLLA CHE IL PATH " << path << " + SOTTOCARTELLE left E right ESISTANO" << std::endl;
-                    cv::imwrite(path + "/left/" + std::to_string(cont_salva_immagini) + ".jpg", left_image_);
-                    cv::imwrite(path + "/right/" + std::to_string(cont_salva_immagini) + ".jpg", right_image_);
+                    cv::imwrite(pathLeft + std::to_string(cont_salva_immagini) + ".jpg", left_image_);
+                    cv::imwrite(pathRight + std::to_string(cont_salva_immagini) + ".jpg", right_image_);
                     cont_salva_immagini++;
 
                     // Clear matrixes so they won't be re-processed
@@ -194,4 +206,9 @@ private:
     rclcpp::TimerBase::SharedPtr sync_timer_;
 
     int cont_salva_immagini;
+
+    const std::string path = "/home/formula-student/immagini";
+    const std::string pathLeft = path + "/left/";
+    const std::string pathRight = path + "/right/";
+    
 };

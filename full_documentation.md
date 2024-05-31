@@ -25,7 +25,9 @@ The node subscribes to the following topics and waits for data:
 
 In the stereo mode, the node will subscribe to both topics; while in monocular mode, the node will subscribe to only one of them, according to is_camera_left parameter (described below).
 
-The images are currently of type `sensor_msgs::msg::CompressedImage`. This can be changed to `sensor_msgs::msg::Image`, by changing `ImageMsg` in [utility.hpp](src/orbslam3_odometry/include/orbslam3_odometry/utility.hpp).
+For the stereo mode, we found also that it's better to keep the `doRectify` parameter setted to `false` in the driver_camera. This node will apply stereo-rectification to the images before giving them to ORB-SLAM. With the `doRectify` parameter setted to `true`, we found that in the curva ORB-SLAM might fail to track. 
+
+The images are currently of type `sensor_msgs::msg::CompressedImage`. This can be changed to `sensor_msgs::msg::Image`, by changing `ImageMsg` in [utility.hpp](src/orbslam3_odometry/include/orbslam3_odometry/utility.hpp). We advise to use the `CompressedImage` to record bags and run them in a virtual machine, because: the Orin will record almost all the images (even at 60Hz) with only a few loss, the bags will be less heavy and the virtual machine might also work with just a rate of 0.5 during the playback of the bag. 
  
 
 Although ORB-SLAM3 provides a way to use also IMU data for the mapping/localization, we couldn't find a way to make it work properly. For this reason, this node won't subscribe to IMU. 
@@ -69,11 +71,18 @@ For the monocular version of ORBSLAM3, the following parameters are used:
     It's also important that the car's front points are not present in the cutted images, otherwise we found that ORBSLAM may see always the same points and "think" that the car is stopped. 
 
 
-- **Scale Position Mono**: This parameter indicates the scale to multiply the calculated position. We use this factor because when we use a mono camera we have not a real scale factor due to impossible to determine the scene depth. We cannot predict how much it will be, but we tested that it's usually between 10 and 20, so we advise to use `15`. 
+- **Scale Position Mono**: This parameter indicates the scale to multiply the calculated position. We use this factor because when we use a mono camera we have not a real scale factor due to impossible to determine the scene depth. We cannot predict how much it will be, but we tested that it's usually between 5 and 10, so we advise to use `7`. <mark>[TODO dopo la robot localization ]</mark>
 
 - **Degree Move Pose Mono**: This parameter (<i>degree_move_pose_mono</i>) specifies the degree to move the calculated orientation. We change the orientation to align it with FastLio (otherwise we would have oblique trajectory when the car is actually going straight).
     - If it is 0, the pose will not be changed. This should be used in  case camera is in the same direction as the forward axes.
-    - If the cameras' support is the same as the one used for the test and cameras are turned with the same angles, we found that a value of `16` works good.  (TBD with new support)
+    - If the cameras' support is the same as the one used for the test and cameras are turned with the same angles, we found that the required angle has a value between `10` and `16`. To obtain the angle do as follow:
+        - first set this parameter to 0
+        - run orbslam in monocular mode and open rviz (with the [provided rviz configuration file](src/orbslam3_odometry/rviz_config/visualizza_orbslam_e_fastlio.rviz))
+        - go for a few meters in a straight line
+        - in rviz you should see something like this image (the left one):
+        ![img_doc.png](img_doc.png)
+        - set <i>degree_move_pose_mono</i> parameter with **90-$\alpha$**
+        - this angle will remain the same as long as the camera is not rotated (wrt the forward axis)
 
 
 ### Stereo Version Parameters
@@ -94,8 +103,9 @@ Camera.fps: 60
 # Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
 Camera.RGB: 0
 
-# ORB Extractor: Number of features per image. There is not a fixed value, somtimes it's necessary 
-# to try with a few values, but we usually use between 1000 and 5000. We advise 3000. 
+# ORB Extractor: Number of features per image. There is not a fixed value, 
+# somtimes it's necessary  to try with a few values, but we usually use between 
+# 1000 and 5000. We advise 3000. 
 ORBextractor.nFeatures: 3000
 ```
 
@@ -110,13 +120,18 @@ Camera.type: "PinHole"
 Camera.width: 1280      
 Camera.height: 720
 
-# Camera's intrinsics parameters. They are found after the calibration (es. with MatLab). They are the same used in the driver_camera node. For example:
+# Camera's intrinsics parameters. They are found after the calibration (es. 
+# with MatLab). They are the same used in the driver_camera node. For example:
 Camera1.fx: 885.045449448846    
 Camera1.fy: 888.752163653822
 Camera1.cx: 650.293668844900
 Camera1.cy: 303.574748229738
 
-# These are the distortion parameters. Provide them only if the images that arrives from the driver_camera node are unrectified (so only if doRectify parameter in the driver_camera is false). Otherwise (so if the doRectify is true), you must provide them (you can also found them in the driver_camera's configuration file). p1 and p2 must be 0.0. For example:
+# These are the distortion parameters. Provide them only if the images that 
+# arrives from the driver_camera node are unrectified (so only if doRectify 
+# parameter in the driver_camera is false). Otherwise (so if the doRectify is 
+# true), you must provide them (you can also found them in the driver_camera's
+# configuration file). p1 and p2 must be 0.0. For example:
 Camera1.k1: 0.038229506627
 Camera1.k2: -0.014204216000
 Camera1.p1: 0.0
@@ -125,7 +140,9 @@ Camera1.p2: 0.0
 
 
 ### Stereo 
-For the stereo version we provided some useful scripts to allow you to get the stereo parameters, used for rectification. These are only required if Basler are used. If stereo camera are used (such as Zed), then the only required parameters are intrinsics value of one of the two cameras. Also if you are using Zed, you must remove the definition of `PRE_RECTIFY_IMAGES` macro in [stereo.cpp](src/orbslam3_odometry/src/stereo/stereo.cpp), and skip all the rest.
+For the stereo version we provided some useful scripts to allow you to get the stereo parameters, used to pre-rectify the images. We found that the orbslam's stereo-rectification code will not work, so we pre-rectify the images before giving them to orbslam. To pre-rectify the images you will need some parameters, that can be obtained following these steps.
+
+These are only required if Basler are used. If stereo camera are used (such as Zed), then the only required parameters are intrinsics value of one of the two cameras. Also if you are using Zed, you must remove the definition of `PRE_RECTIFY_IMAGES` macro in [stereo.cpp](src/orbslam3_odometry/src/stereo/stereo.cpp), and skip all the rest.
 
 To obtain stereo's rectification parameters, we created a few scripts. The steps that must be done are the following:
 
@@ -133,7 +150,7 @@ To obtain stereo's rectification parameters, we created a few scripts. The steps
     
     First thing to do is getting the pictures to calibrate cameras. The images can be obtained like this: 
     - In the  [yaml file](src/orbslam3_odometry/config/orbslam3_odometry.yaml), set to `true` the <i>just_take_picture</i> parameter and set to `false` the <i>just_check_stereo_calibration</i> parameter.
-    - In the [just_check_stereo_calibration.cpp](src/orbslam3_odometry/src/stereo/just_check_stereo_calibration.cpp) at line 150, change the path variable with the folder where calibration images will be saved. <b>Remember </b> to create this folder and two sub-directories (called <i>left</i> and <i>right</i>) before running the node.
+    - In the [just_check_stereo_calibration.cpp](src/orbslam3_odometry/src/stereo/just_check_stereo_calibration.cpp) in the bottom lines, change the path variable with the folder where calibration images will be saved. <b>Remember </b> to create this folder and two sub-directories (called <i>left</i> and <i>right</i>) before running the node.
     - Re-build the node. Tip: `colcon build --symlink-install`
     - Run the node. Left and right images will be shown. When you are ready to take the picture, press the spacebar. The focus must be on the shown pictures, NOT on the terminal, so press with the mouse on the window with the shown pictures before taking the images.
 
@@ -144,18 +161,13 @@ To obtain stereo's rectification parameters, we created a few scripts. The steps
 
 2. Calibrate cameras (es. with MatLab) and populate the settings file
 
-    Once you have the pictures, use some tools to have the intrinsics and stereo parameters. Example of tools can be MatLab or Kalibr (not the missile :) ). 
+    Once you have the pictures, use some tools to have the intrinsics and stereo parameters. Example of tools can be MatLab or Kalibr (not the missile :) ). Kalibr is the one advised by orb-slam, but we couldn't make it work.
     
     If you use MatLab, do as follow:
     - Use 'stereo calibration app' in MatLab: provide the pictures (first camera is the left) and the checkboard size. After the calibration, make sure the error is under 1 pixel (if it's not, remove the images with big errors and re-calibrate).
     - Once the calibration is okay, click on "Export" -> "Export stereo parameters in workspace"
     - You can now run [this script](src/orbslam3_odometry/from_matlab_to_opencv/from_matlab_to_opencv.m) in MatLab, to write on a file ('orbslam_parameters.txt') the calculated parameters. 
     - Put the content of 'orbslam_parameters.txt' directly in the yaml settings file.
-    - Put in the yaml settings file also this parameter:
-        ```YAML
-        # Stereo baseline in meters (aka distance between camera left's and right's center)
-        Stereo.b: 0.093
-        ```
     
     If you use another tool, make sure to put in the setting yaml file: intrinsics cameras parameters, distortion cameras parameters, width and height of images, stereo matrix and camera type (PinHole/Rectified). More on this can be found directly [here](https://github.com/UZ-SLAMLab/ORB_SLAM3/blob/master/Calibration_Tutorial.pdf), with an example on how to use Kalibr.
 
