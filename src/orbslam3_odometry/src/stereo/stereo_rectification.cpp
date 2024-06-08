@@ -203,6 +203,67 @@ void show_disparity(const cv::Mat &img1_non_cropped, const cv::Mat &img2_non_cro
 
     cv::imshow("Left and right rectified + Disparity map Nuova ", concatenated);
 
+    //add code for depth map old map 
+    /*const double focalLength = 888.049904938588;
+    const double baseline = 0.093;
+
+    cv::Mat depthMap(disparity8U.size(), CV_32F);
+    for (int y = 0; y < disparity8U.rows; y++) {
+        for (int x = 0; x < disparity8U.cols; x++) {
+            float disp = static_cast<float>(disparity8U.at<int>(y, x)) ;
+            if (disp > 0) {
+                depthMap.at<float>(y, x) = (focalLength * baseline) / disp;
+            } else {
+                depthMap.at<float>(y, x) = 0;
+            }
+        }
+    }
+
+    // Print depth values at specific points
+    for (int y = 0; y < disparity8U.rows; y += disparity8U.rows / 10) {
+        for (int x = 0; x < disparity8U.cols; x += disparity8U.cols / 10) {
+            std::cout << "Depth at (" << y << ", " << x << "): " << depthMap.at<float>(y, x) << " meters" << std::endl;
+        }
+    }
+
+
+    cv::Mat depthMap8U;
+    normalize(depthMap, depthMap8U, 0, 255, cv::NORM_MINMAX, CV_8U);
+    cv::Mat depthMapColor;
+    cv::applyColorMap(depthMap8U, depthMapColor, cv::COLORMAP_JET);
+
+    //cv::hconcat(concatenated, depthMapColor, concatenated);
+    //cv::resize(concatenated, concatenated, cv::Size(concatenated.cols / 2, concatenated.rows / 2));
+
+    //cv::imshow("Left and right rectified + Disparity map Nuova + Depth map", concatenated);
+    cv::imshow("depth map colored", depthMapColor);
+    cv::resize(depthMapColor, depthMapColor, cv::Size(depthMapColor.cols / 2, depthMapColor.rows / 2));
+
+    cv::waitKey(0);*/
+
+    const double focalLength = 888.049904938588; //pixel
+    const double baseline = 0.093; //meters 
+
+    // Calculate depth map from disparity
+    cv::Mat depthMap = cv::Mat::zeros(disparityMapNuova.size(), CV_64F);
+    cv::divide(focalLength * baseline, disparityMapNuova, depthMap); // depth = fB / disparity
+
+    // Convert depth map to meters and display
+    depthMap.convertTo(depthMap, CV_32F, 1.0 / 1000); // if depth is in millimeters
+    cv::normalize(depthMap, depthMap, 0, 255, cv::NORM_MINMAX, CV_8U);
+    cv::imshow("Depth Map", depthMap);
+
+    cv::waitKey(0);
+
+    int x = 50, y = 168;
+    float distanza = depthMap.at<float>(y, x);
+    std::cout << "Depth at (" << x << ", " << y << ") is " << distanza << " meters." << std::endl; 
+
+    std::cout << " --------------------------------" << std::endl;
+
+    x = 98, y = 135;
+    float depth = depthMap.at<float>(y, x);
+    std::cout << "Depth at (" << x << ", " << y << ") is " << distanza << " meters." << std::endl; 
 }
 
 
